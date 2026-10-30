@@ -1,15 +1,109 @@
-import { spawn } from "child_process";
-import fs from "fs";
-import path from "path";
 import { SimulationResult, SimulationState } from "../../shared/types/index.js";
+import { ModalExecutor, SimulationExecutor } from "../../providers/modal/ModalExecutor.js";
+import { LLMProvider } from "../../providers/fireworks/FireworksLlamaProvider.js";
 
 export class SimulationAgent {
+  private executor: SimulationExecutor;
+  private llm?: LLMProvider;
+
+  constructor(executor?: SimulationExecutor, llm?: LLMProvider) {
+    this.executor = executor || new ModalExecutor();
+    this.llm = llm;
+  }
+
   async runSimulation(topic: string, algorithmParams?: { target?: number; array?: number[] }): Promise<SimulationResult> {
+    const isBinarySearch = topic.toLowerCase().includes("binary search");
+    const isBloomFilter = topic.toLowerCase().includes("bloom");
+    const isTree = topic.toLowerCase().includes("b-tree") || topic.toLowerCase().includes("tree");
+
+    let pythonScript = "";
     const target = algorithmParams?.target ?? 42;
     const array = algorithmParams?.array ?? [7, 14, 21, 28, 35, 42, 49, 56, 63];
 
-    // Python simulation code with assertion tests & JSON state output
-    const pythonScript = `
+    if (isBloomFilter) {
+      pythonScript = `
+import json
+import hashlib
+
+def hash1(s, m):
+    return int(hashlib.md5(s.encode()).hexdigest(), 16) % m
+
+def hash2(s, m):
+    return int(hashlib.sha256(s.encode()).hexdigest(), 16) % m
+
+def hash3(s, m):
+    return int(hashlib.sha1(s.encode()).hexdigest(), 16) % m
+
+def bloom_filter_simulation():
+    m = 10
+    bit_array = [0] * m
+    items_to_add = ["apple", "banana"]
+    test_queries = ["apple", "cherry"]
+    states = []
+    step = 1
+
+    states.append({
+        "step": step,
+        "description": "Initialize Bloom Filter bit array of size 10 with all 0s",
+        "stateData": {
+            "array": bit_array.copy(),
+            "m": m,
+            "currentItem": None,
+            "hashIndices": [],
+            "action": "init"
+        }
+    })
+
+    # Insertion
+    for item in items_to_add:
+        step += 1
+        h1, h2, h3 = hash1(item, m), hash2(item, m), hash3(item, m)
+        indices = sorted(list(set([h1, h2, h3])))
+        for idx in indices:
+            bit_array[idx] = 1
+        states.append({
+            "step": step,
+            "description": f"Insert '{item}': hashes map to bit indices {indices}. Set bits to 1.",
+            "stateData": {
+                "array": bit_array.copy(),
+                "m": m,
+                "currentItem": item,
+                "hashIndices": indices,
+                "action": "insert"
+            }
+        })
+
+    # Queries
+    for query in test_queries:
+        step += 1
+        h1, h2, h3 = hash1(query, m), hash2(query, m), hash3(query, m)
+        indices = sorted(list(set([h1, h2, h3])))
+        all_set = all(bit_array[i] == 1 for i in indices)
+        status_msg = "Definitely NOT in set (0 found)" if not all_set else "Possibly in set (all 1s)"
+        states.append({
+            "step": step,
+            "description": f"Query '{query}': checked indices {indices}. Result: {status_msg}.",
+            "stateData": {
+                "array": bit_array.copy(),
+                "m": m,
+                "currentItem": query,
+                "hashIndices": indices,
+                "action": "query",
+                "match": all_set
+            }
+        })
+
+    return states
+
+if __name__ == "__main__":
+    results = bloom_filter_simulation()
+    print("---OUTPUT_START---")
+    print(json.dumps(results))
+    print("---OUTPUT_END---")
+`;
+    } else {
+      // Default to Binary Search
+      pythonScript = `
 import json
 import sys
 
@@ -19,7 +113,6 @@ def binary_search_trace(arr, target):
     right = len(arr) - 1
     step = 1
 
-    # Initial state
     states.append({
         "step": step,
         "description": f"Initialized search space: bounds [0, {right}], target {target}",
@@ -91,7 +184,6 @@ def binary_search_trace(arr, target):
             })
             right = mid - 1
 
-    # Verification assertions
     assert found_index != -1, f"Expected to find {target} in sorted array"
     assert arr[found_index] == target, f"Element at index {found_index} must equal {target}"
 
@@ -105,95 +197,13 @@ if __name__ == "__main__":
     print(json.dumps(results))
     print("---OUTPUT_END---")
 `;
+    }
 
-    // Execute in sandboxed child process
-    return new Promise((resolve) => {
-      const proc = spawn("python3", ["-c", pythonScript]);
-
-      let stdout = "";
-      let stderr = "";
-
-      proc.stdout.on("data", (d) => {
-        stdout += d.toString();
-      });
-
-      proc.stderr.on("data", (d) => {
-        stderr += d.toString();
-      });
-
-      proc.on("close", (code) => {
-        if (code === 0 && stdout.includes("---OUTPUT_START---")) {
-          const rawJson = stdout.split("---OUTPUT_START---")[1].split("---OUTPUT_END---")[0].trim();
-          try {
-            const states: SimulationState[] = JSON.parse(rawJson);
-            return resolve({
-              algorithm: "Binary Search",
-              language: "python",
-              code: pythonScript.trim(),
-              states,
-              passedSelfTests: true,
-              executionOutput: "Simulation passed internal assertions successfully."
-            });
-          } catch (e) {
-            // json parse error fallback
-          }
-        }
-
-        // Fallback states if python execution had an issue
-        const fallbackStates: SimulationState[] = [
-          {
-            step: 1,
-            description: "Initialize search space with target 42",
-            stateData: {
-              array,
-              left: 0,
-              right: array.length - 1,
-              mid: null,
-              midVal: null,
-              target,
-              eliminated: [],
-              status: "initialized"
-            }
-          },
-          {
-            step: 2,
-            description: "Middle index 4 (value 35) is less than 42; eliminate left half",
-            stateData: {
-              array,
-              left: 0,
-              right: array.length - 1,
-              mid: 4,
-              midVal: 35,
-              target,
-              eliminated: [0, 1, 2, 3, 4],
-              status: "narrowing_right"
-            }
-          },
-          {
-            step: 3,
-            description: "Middle index 5 (value 42) matches target 42!",
-            stateData: {
-              array,
-              left: 5,
-              right: array.length - 1,
-              mid: 5,
-              midVal: 42,
-              target,
-              eliminated: [0, 1, 2, 3, 4, 6, 7, 8],
-              status: "found"
-            }
-          }
-        ];
-
-        resolve({
-          algorithm: "Binary Search",
-          language: "python",
-          code: pythonScript.trim(),
-          states: fallbackStates,
-          passedSelfTests: true,
-          executionOutput: stderr || "Fallback states used."
-        });
-      });
-    });
+    const algoName = isBloomFilter ? "Bloom Filter" : isTree ? "B-Tree" : "Binary Search";
+    const res = await this.executor.execute(pythonScript, array, target);
+    return {
+      ...res,
+      algorithm: algoName,
+    };
   }
 }

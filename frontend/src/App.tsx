@@ -5,6 +5,7 @@ import {
   BrainCircuit, 
   CheckCircle2, 
   AlertTriangle, 
+  Info,
   RefreshCw, 
   Download, 
   Code2, 
@@ -91,7 +92,7 @@ interface Job {
 }
 
 export default function App() {
-  const [topic, setTopic] = useState('How Binary Search Works');
+  const [topic, setTopic] = useState('How Bloom Filter Works');
   const [audienceLevel, setAudienceLevel] = useState('beginner');
   const [targetDuration, setTargetDuration] = useState(45);
   const [visualStyle, setVisualStyle] = useState('minimalist_dark');
@@ -106,13 +107,29 @@ export default function App() {
   // Load existing jobs on mount
   useEffect(() => {
     fetchJobs();
-    const interval = setInterval(fetchJobs, 8000);
-    return () => clearInterval(interval);
   }, []);
 
-  // Poll active job
+  // Poll jobs list ONLY when a job is actively running
+  useEffect(() => {
+    const isAnyJobRunning = activeJob?.status && !['completed', 'failed'].includes(activeJob.status);
+    if (!isAnyJobRunning && !loading) return;
+
+    const interval = setInterval(() => {
+      fetchJobs();
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [activeJob?.status, loading]);
+
+  // Poll active job ONLY while it is in progress
   useEffect(() => {
     if (!activeJobId) return;
+    
+    // If active job is already finished, don't poll
+    if (activeJob && (activeJob.status === 'completed' || activeJob.status === 'failed')) {
+      setLoading(false);
+      return;
+    }
+
     const fetchCurrent = async () => {
       try {
         const res = await fetch(`/api/jobs/${activeJobId}`);
@@ -121,6 +138,7 @@ export default function App() {
           setActiveJob(data);
           if (data.status === 'completed' || data.status === 'failed') {
             setLoading(false);
+            fetchJobs(); // Final sync
           }
         }
       } catch (e) {
@@ -131,13 +149,13 @@ export default function App() {
     fetchCurrent();
     const interval = setInterval(fetchCurrent, 1500);
     return () => clearInterval(interval);
-  }, [activeJobId]);
+  }, [activeJobId, activeJob?.status]);
 
   const fetchJobs = async () => {
     try {
       const res = await fetch('/api/jobs');
       if (res.ok) {
-        const data = await res.json();
+        const data: Job[] = await res.json();
         setRecentJobs(data);
         if (!activeJobId && data.length > 0) {
           setActiveJobId(data[0].id);
@@ -172,6 +190,8 @@ export default function App() {
         setActiveJobId(data.id);
         setActiveJob(data);
         fetchJobs();
+      } else {
+        setLoading(false);
       }
     } catch (e) {
       console.error(e);
@@ -179,25 +199,28 @@ export default function App() {
     }
   };
 
+  const isJobRunning = activeJob?.status && !['completed', 'failed'].includes(activeJob.status);
+
   const renderStatusBadge = (status: string) => {
-    const map: Record<string, { bg: string; text: string; label: string }> = {
-      completed: { bg: 'bg-emerald-950/80 border-emerald-500/50 text-emerald-400', text: 'Completed', label: 'Ready' },
-      failed: { bg: 'bg-rose-950/80 border-rose-500/50 text-rose-400', text: 'Failed', label: 'Failed' },
-      researching: { bg: 'bg-blue-950/80 border-blue-500/50 text-blue-400', text: 'Researching', label: 'Agent 1' },
-      teaching: { bg: 'bg-indigo-950/80 border-indigo-500/50 text-indigo-400', text: 'Scripting', label: 'Agent 2' },
-      simulating: { bg: 'bg-cyan-950/80 border-cyan-500/50 text-cyan-400', text: 'Simulating', label: 'Agent 3' },
-      planning: { bg: 'bg-purple-950/80 border-purple-500/50 text-purple-400', text: 'Visual Planning', label: 'Agent 4' },
-      narrating: { bg: 'bg-amber-950/80 border-amber-500/50 text-amber-400', text: 'TTS Voiceover', label: 'Agent 5' },
-      critiquing: { bg: 'bg-pink-950/80 border-pink-500/50 text-pink-400', text: 'Meta Llama Critic', label: 'Agent 7' },
-      correcting: { bg: 'bg-orange-950/80 border-orange-500/50 text-orange-400', text: 'Auto-Remediating', label: 'Agent 8' },
-      rendering: { bg: 'bg-teal-950/80 border-teal-500/50 text-teal-400', text: 'Rendering 1080p MP4', label: 'Engine' },
+    const isRunning = !['completed', 'failed'].includes(status);
+    const map: Record<string, { bg: string; text: string }> = {
+      completed: { bg: 'bg-emerald-950/80 border-emerald-500/50 text-emerald-400', text: 'Completed' },
+      failed: { bg: 'bg-rose-950/80 border-rose-500/50 text-rose-400', text: 'Failed' },
+      researching: { bg: 'bg-blue-950/80 border-blue-500/50 text-blue-400', text: 'Researching (Muse Spark)' },
+      teaching: { bg: 'bg-indigo-950/80 border-indigo-500/50 text-indigo-400', text: 'Scripting (Muse Spark)' },
+      simulating: { bg: 'bg-cyan-950/80 border-cyan-500/50 text-cyan-400', text: 'Simulating (Python)' },
+      planning: { bg: 'bg-purple-950/80 border-purple-500/50 text-purple-400', text: 'Visual Planning' },
+      narrating: { bg: 'bg-amber-950/80 border-amber-500/50 text-amber-400', text: 'TTS Voiceover' },
+      critiquing: { bg: 'bg-pink-950/80 border-pink-500/50 text-pink-400', text: 'Meta Llama Critic' },
+      correcting: { bg: 'bg-orange-950/80 border-orange-500/50 text-orange-400', text: 'Auto-Remediating' },
+      rendering: { bg: 'bg-teal-950/80 border-teal-500/50 text-teal-400', text: 'Rendering 1080p MP4' },
     };
 
-    const s = map[status] || { bg: 'bg-slate-800 text-slate-300 border-slate-600', text: status, label: 'State' };
+    const s = map[status] || { bg: 'bg-slate-800 text-slate-300 border-slate-600', text: status };
 
     return (
       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${s.bg}`}>
-        <span className="w-2 h-2 rounded-full bg-current animate-pulse"></span>
+        <span className={`w-2 h-2 rounded-full bg-current ${isRunning ? 'animate-ping' : ''}`}></span>
         {s.text}
       </span>
     );
@@ -216,14 +239,14 @@ export default function App() {
               <h1 className="text-xl font-bold tracking-tight text-white">Concept2Motion</h1>
               <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">Meta AI Hackathon</span>
             </div>
-            <p className="text-xs text-slate-400">Autonomous Technical Video Engine Powered by Meta Open-Weight Critic</p>
+            <p className="text-xs text-slate-400">Autonomous Technical Video Engine Powered by Meta Muse Spark & Open-Weight Critic</p>
           </div>
         </div>
 
         <div className="flex items-center gap-4 text-xs text-slate-400">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60">
             <Cpu className="w-4 h-4 text-indigo-400" />
-            <span>Critic: <strong className="text-slate-200">Meta Llama 3.3 70B</strong></span>
+            <span>Reasoning: <strong className="text-slate-200">Meta Muse Spark 1.3</strong></span>
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
@@ -251,7 +274,7 @@ export default function App() {
                   type="text"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
-                  placeholder="e.g. How Binary Search Works"
+                  placeholder="e.g. How Bloom Filter Works"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/90 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500"
                   required
                 />
@@ -347,6 +370,9 @@ export default function App() {
                   onClick={() => {
                     setActiveJobId(j.id);
                     setActiveJob(j);
+                    if (j.status === 'completed' || j.status === 'failed') {
+                      setLoading(false);
+                    }
                   }}
                   className={`text-left p-3 rounded-xl border transition flex flex-col gap-1.5 ${
                     activeJobId === j.id
@@ -355,7 +381,7 @@ export default function App() {
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-xs text-slate-200 truncate max-w-[200px]">{j.request.topic}</span>
+                    <span className="font-medium text-xs text-slate-200 truncate max-w-[190px]">{j.request.topic}</span>
                     {renderStatusBadge(j.status)}
                   </div>
                   <div className="flex items-center gap-3 text-[11px] text-slate-400">
@@ -474,6 +500,7 @@ export default function App() {
                     {activeJob.videoUrl ? (
                       <div className="rounded-2xl overflow-hidden border border-slate-800 bg-black aspect-video relative shadow-2xl">
                         <video
+                          key={activeJob.videoUrl}
                           src={activeJob.videoUrl}
                           controls
                           autoPlay
@@ -507,42 +534,49 @@ export default function App() {
                 {/* 2. Observable Agent Timeline */}
                 {selectedTab === 'timeline' && (
                   <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto pr-2">
-                    {activeJob.traces.map((trace) => (
-                      <div
-                        key={trace.id}
-                        className="p-3.5 rounded-xl bg-slate-800/40 border border-slate-700/40 flex items-start gap-3 text-xs"
-                      >
-                        <div className="mt-0.5">
-                          {trace.status === 'success' ? (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                          ) : trace.status === 'warning' ? (
-                            <AlertTriangle className="w-4 h-4 text-amber-400" />
-                          ) : trace.status === 'error' ? (
-                            <AlertTriangle className="w-4 h-4 text-rose-400" />
-                          ) : (
-                            <div className="w-4 h-4 rounded-full border-2 border-indigo-400 border-t-transparent animate-spin" />
-                          )}
-                        </div>
+                    {activeJob.traces.map((trace, idx) => {
+                      const isLastStep = idx === activeJob.traces.length - 1;
+                      const showActiveSpinner = isLastStep && isJobRunning;
 
-                        <div className="flex-1 flex flex-col gap-1">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-slate-200">{trace.agent}</span>
-                              <span className="text-slate-400">• {trace.action}</span>
-                            </div>
-                            <span className="text-[10px] text-slate-400 font-mono">
-                              {new Date(trace.timestamp).toLocaleTimeString()}
-                            </span>
+                      return (
+                        <div
+                          key={trace.id}
+                          className="p-3.5 rounded-xl bg-slate-800/40 border border-slate-700/40 flex items-start gap-3 text-xs"
+                        >
+                          <div className="mt-0.5">
+                            {showActiveSpinner ? (
+                              <div className="w-4 h-4 rounded-full border-2 border-indigo-400 border-t-transparent animate-spin" />
+                            ) : trace.status === 'success' ? (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            ) : trace.status === 'warning' ? (
+                              <AlertTriangle className="w-4 h-4 text-amber-400" />
+                            ) : trace.status === 'error' ? (
+                              <AlertTriangle className="w-4 h-4 text-rose-400" />
+                            ) : (
+                              <Info className="w-4 h-4 text-indigo-400" />
+                            )}
                           </div>
-                          <p className="text-slate-300 text-xs leading-relaxed">{trace.details}</p>
-                          {trace.toolUsed && (
-                            <span className="text-[10px] font-mono text-indigo-400 bg-indigo-950/60 border border-indigo-800/40 px-2 py-0.5 rounded w-fit">
-                              tool: {trace.toolUsed}
-                            </span>
-                          )}
+
+                          <div className="flex-1 flex flex-col gap-1">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-slate-200">{trace.agent}</span>
+                                <span className="text-slate-400">• {trace.action}</span>
+                              </div>
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                {new Date(trace.timestamp).toLocaleTimeString()}
+                              </span>
+                            </div>
+                            <p className="text-slate-300 text-xs leading-relaxed">{trace.details}</p>
+                            {trace.toolUsed && (
+                              <span className="text-[10px] font-mono text-indigo-400 bg-indigo-950/60 border border-indigo-800/40 px-2 py-0.5 rounded w-fit">
+                                tool: {trace.toolUsed}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 
@@ -628,10 +662,9 @@ export default function App() {
                                 <span className="font-bold text-indigo-400">Step {st.step}</span>
                                 <p className="text-slate-300">{st.description}</p>
                                 <div className="p-2 rounded bg-slate-900 font-mono text-[11px] text-slate-400 flex flex-wrap gap-2">
-                                  <span>left: {st.stateData.left}</span>
-                                  <span>right: {st.stateData.right}</span>
-                                  <span>mid: {st.stateData.mid ?? 'null'}</span>
-                                  <span>target: {st.stateData.target}</span>
+                                  {Object.entries(st.stateData).map(([k, v]) => (
+                                    <span key={k}>{k}: {Array.isArray(v) ? `[${v.join(', ')}]` : String(v ?? 'null')}</span>
+                                  ))}
                                 </div>
                               </div>
                             ))}

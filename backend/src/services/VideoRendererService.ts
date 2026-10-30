@@ -36,70 +36,136 @@ export class VideoRendererService {
   }
 
   private generateSceneSVG(scene: any, index: number, width = 1920, height = 1080): string {
-    const title = this.escapeXml(scene.title || "Binary Search Algorithm");
+    const rawTitle = scene.title || "Technical Algorithm Visualization";
+    const title = this.escapeXml(rawTitle);
     const props = scene.customProps || {};
     const explanation = this.escapeXml(props.explanation || "Executable Simulation Step");
     const state = props.simulationState || {};
-    const array = state.array || props.array || [7, 14, 21, 28, 35, 42, 49, 56, 63];
-    const left = state.left ?? 0;
-    const right = state.right ?? array.length - 1;
-    const mid = state.mid ?? null;
-    const eliminated = new Set(state.eliminated || []);
-
-    const boxWidth = 140;
-    const boxHeight = 140;
-    const gap = 30;
-    const totalArrayWidth = array.length * boxWidth + (array.length - 1) * gap;
-    const startX = (width - totalArrayWidth) / 2;
-    const startY = height / 2 - 40;
+    const isBloom = props.algorithm === "Bloom Filter" || (props.array && props.array.length === 10 && props.array.every((x: any) => x === 0 || x === 1));
 
     let arrayBoxesSvg = "";
-    array.forEach((val: number, i: number) => {
-      const x = startX + i * (boxWidth + gap);
-      const y = startY;
+    let badgeText = "INVARIANT VERIFIED";
 
-      let bgColor = "#1e293b";
-      let strokeColor = "#475569";
-      let textColor = "#f8fafc";
-      let pointerLabel = "";
+    if (isBloom) {
+      // Render Bloom Filter Bit Array
+      badgeText = "BLOOM FILTER: BIT ARRAY";
+      const bitArray = state.array || props.array || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+      const hashIndices = new Set(state.hashIndices || []);
+      const currentItem = state.currentItem ? this.escapeXml(state.currentItem) : null;
+      const action = state.action || "init";
 
-      if (eliminated.has(i)) {
-        bgColor = "#0f172a";
-        strokeColor = "#334155";
-        textColor = "#64748b";
-      }
+      const boxWidth = 130;
+      const boxHeight = 130;
+      const gap = 24;
+      const totalWidth = bitArray.length * boxWidth + (bitArray.length - 1) * gap;
+      const startX = (width - totalWidth) / 2;
+      const startY = height / 2 - 30;
 
-      if (i === mid && state.status === "found") {
-        bgColor = "#059669";
-        strokeColor = "#34d399";
-        pointerLabel = "MID (MATCH!)";
-      } else if (i === mid) {
-        bgColor = "#2563eb";
-        strokeColor = "#60a5fa";
-        pointerLabel = "MID";
-      } else if (i === left && i === right) {
-        pointerLabel = "L=R";
-      } else if (i === left) {
-        pointerLabel = "LEFT";
-      } else if (i === right) {
-        pointerLabel = "RIGHT";
-      }
+      bitArray.forEach((val: number, i: number) => {
+        const x = startX + i * (boxWidth + gap);
+        const y = startY;
+        const isHighlighted = hashIndices.has(i);
 
-      arrayBoxesSvg += `
-        <g transform="translate(${x}, ${y})">
-          <rect width="${boxWidth}" height="${boxHeight}" rx="16" fill="${bgColor}" stroke="${strokeColor}" stroke-width="4" />
-          <text x="${boxWidth / 2}" y="${boxHeight / 2 + 16}" font-family="sans-serif" font-size="44" font-weight="bold" fill="${textColor}" text-anchor="middle">${val}</text>
-          <text x="${boxWidth / 2}" y="${boxHeight + 35}" font-family="monospace" font-size="20" fill="#94a3b8" text-anchor="middle">idx: ${i}</text>
-          ${
-            pointerLabel
-              ? `<path d="M ${boxWidth / 2} -25 L ${boxWidth / 2} -8" stroke="#38bdf8" stroke-width="4" />
-                 <rect x="${boxWidth / 2 - 60}" y="-65" width="120" height="32" rx="8" fill="#0284c7" />
-                 <text x="${boxWidth / 2}" y="-44" font-family="sans-serif" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">${pointerLabel}</text>`
-              : ""
+        let bgColor = val === 1 ? "#1e3a5f" : "#0f172a";
+        let strokeColor = val === 1 ? "#38bdf8" : "#334155";
+        let textColor = val === 1 ? "#38bdf8" : "#64748b";
+
+        if (isHighlighted) {
+          if (action === "insert") {
+            bgColor = "#047857"; // green
+            strokeColor = "#34d399";
+            textColor = "#ffffff";
+          } else if (action === "query") {
+            bgColor = val === 1 ? "#1d4ed8" : "#b91c1c"; // blue if 1, red if 0
+            strokeColor = val === 1 ? "#60a5fa" : "#f87171";
+            textColor = "#ffffff";
           }
-        </g>
-      `;
-    });
+        }
+
+        const pointerLabel = isHighlighted ? (action === "insert" ? "SET (hash)" : "PROBE") : "";
+
+        arrayBoxesSvg += `
+          <g transform="translate(${x}, ${y})">
+            <rect width="${boxWidth}" height="${boxHeight}" rx="16" fill="${bgColor}" stroke="${strokeColor}" stroke-width="4" />
+            <text x="${boxWidth / 2}" y="${boxHeight / 2 + 16}" font-family="sans-serif" font-size="48" font-weight="bold" fill="${textColor}" text-anchor="middle">${val}</text>
+            <text x="${boxWidth / 2}" y="${boxHeight + 35}" font-family="monospace" font-size="20" fill="#94a3b8" text-anchor="middle">bit [${i}]</text>
+            ${
+              pointerLabel
+                ? `<path d="M ${boxWidth / 2} -25 L ${boxWidth / 2} -8" stroke="#38bdf8" stroke-width="4" />
+                   <rect x="${boxWidth / 2 - 60}" y="-65" width="120" height="32" rx="8" fill="#0284c7" />
+                   <text x="${boxWidth / 2}" y="-44" font-family="sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">${pointerLabel}</text>`
+                : ""
+            }
+          </g>
+        `;
+      });
+
+      if (currentItem) {
+        badgeText = `${action.toUpperCase()}: "${currentItem}"`;
+      }
+    } else {
+      // Render Binary Search
+      badgeText = "TARGET: 42";
+      const array = state.array || props.array || [7, 14, 21, 28, 35, 42, 49, 56, 63];
+      const left = state.left ?? 0;
+      const right = state.right ?? array.length - 1;
+      const mid = state.mid ?? null;
+      const eliminated = new Set(state.eliminated || []);
+
+      const boxWidth = 140;
+      const boxHeight = 140;
+      const gap = 30;
+      const totalArrayWidth = array.length * boxWidth + (array.length - 1) * gap;
+      const startX = (width - totalArrayWidth) / 2;
+      const startY = height / 2 - 40;
+
+      array.forEach((val: number, i: number) => {
+        const x = startX + i * (boxWidth + gap);
+        const y = startY;
+
+        let bgColor = "#1e293b";
+        let strokeColor = "#475569";
+        let textColor = "#f8fafc";
+        let pointerLabel = "";
+
+        if (eliminated.has(i)) {
+          bgColor = "#0f172a";
+          strokeColor = "#334155";
+          textColor = "#64748b";
+        }
+
+        if (i === mid && state.status === "found") {
+          bgColor = "#059669";
+          strokeColor = "#34d399";
+          pointerLabel = "MID (MATCH!)";
+        } else if (i === mid) {
+          bgColor = "#2563eb";
+          strokeColor = "#60a5fa";
+          pointerLabel = "MID";
+        } else if (i === left && i === right) {
+          pointerLabel = "L=R";
+        } else if (i === left) {
+          pointerLabel = "LEFT";
+        } else if (i === right) {
+          pointerLabel = "RIGHT";
+        }
+
+        arrayBoxesSvg += `
+          <g transform="translate(${x}, ${y})">
+            <rect width="${boxWidth}" height="${boxHeight}" rx="16" fill="${bgColor}" stroke="${strokeColor}" stroke-width="4" />
+            <text x="${boxWidth / 2}" y="${boxHeight / 2 + 16}" font-family="sans-serif" font-size="44" font-weight="bold" fill="${textColor}" text-anchor="middle">${val}</text>
+            <text x="${boxWidth / 2}" y="${boxHeight + 35}" font-family="monospace" font-size="20" fill="#94a3b8" text-anchor="middle">idx: ${i}</text>
+            ${
+              pointerLabel
+                ? `<path d="M ${boxWidth / 2} -25 L ${boxWidth / 2} -8" stroke="#38bdf8" stroke-width="4" />
+                   <rect x="${boxWidth / 2 - 60}" y="-65" width="120" height="32" rx="8" fill="#0284c7" />
+                   <text x="${boxWidth / 2}" y="-44" font-family="sans-serif" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">${pointerLabel}</text>`
+                : ""
+            }
+          </g>
+        `;
+      });
+    }
 
     return `
       <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
@@ -121,9 +187,9 @@ export class VideoRendererService {
         <text x="145" y="115" font-family="sans-serif" font-size="44" font-weight="800" fill="#f8fafc">${title}</text>
         <text x="145" y="150" font-family="sans-serif" font-size="22" font-weight="500" fill="#94a3b8">Concept2Motion • Scene ${index + 1} • Invariant Visualization</text>
 
-        <!-- Target Badge -->
-        <rect x="${width - 360}" y="75" width="240" height="60" rx="16" fill="#1e1b4b" stroke="#6366f1" stroke-width="2" />
-        <text x="${width - 240}" y="113" font-family="sans-serif" font-size="24" font-weight="bold" fill="#818cf8" text-anchor="middle">TARGET: 42</text>
+        <!-- Dynamic Badge -->
+        <rect x="${width - 420}" y="75" width="300" height="60" rx="16" fill="#1e1b4b" stroke="#6366f1" stroke-width="2" />
+        <text x="${width - 270}" y="113" font-family="sans-serif" font-size="22" font-weight="bold" fill="#818cf8" text-anchor="middle">${badgeText}</text>
 
         <!-- Array Elements Visualization -->
         ${arrayBoxesSvg}
@@ -131,7 +197,7 @@ export class VideoRendererService {
         <!-- Subtitle / Explanation Card -->
         <rect x="${(width - 1200) / 2}" y="${height - 200}" width="1200" height="110" rx="20" fill="#0f172a" stroke="#334155" stroke-width="2" />
         <text x="${width / 2}" y="${height - 145}" font-family="sans-serif" font-size="26" font-weight="600" fill="#38bdf8" text-anchor="middle">${explanation}</text>
-        <text x="${width / 2}" y="${height - 110}" font-family="sans-serif" font-size="20" font-weight="400" fill="#94a3b8" text-anchor="middle">Time Complexity: O(log N) • Guaranteed Elimination Invariant</text>
+        <text x="${width / 2}" y="${height - 110}" font-family="sans-serif" font-size="20" font-weight="400" fill="#94a3b8" text-anchor="middle">Time Complexity: O(k) / O(log N) • Executed Simulation State Invariant</text>
       </svg>
     `;
   }
@@ -152,7 +218,6 @@ export class VideoRendererService {
       const pngPath = path.join(jobDir, `scene_${i + 1}.png`);
       const sceneVideoPath = path.join(jobDir, `scene_${i + 1}.mp4`);
 
-      // Write SVG and render directly to PNG with Resvg
       const svgContent = this.generateSceneSVG(scene, i);
       fs.writeFileSync(svgPath, svgContent, "utf-8");
 
@@ -162,7 +227,6 @@ export class VideoRendererService {
 
       const duration = Math.max(3, segment.audioDurationSeconds || scene.durationSeconds || 5);
 
-      // Render video segment using ffmpeg
       await new Promise<void>((resolve, reject) => {
         let args: string[] = [];
 
@@ -210,7 +274,6 @@ export class VideoRendererService {
       });
     }
 
-    // Concatenate all scene videos into final_video.mp4
     const concatListPath = path.join(jobDir, "concat_list.txt");
     const concatContent = sceneVideoPaths.map((p) => `file '${path.resolve(p)}'`).join("\n");
     fs.writeFileSync(concatListPath, concatContent, "utf-8");

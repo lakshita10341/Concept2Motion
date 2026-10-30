@@ -2,7 +2,8 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import dotenv from "dotenv";
-import { FireworksLlamaProvider } from "./providers/fireworks/FireworksLlamaProvider.js";
+import { UnifiedLLMProvider } from "./providers/UnifiedLLMProvider.js";
+import { MetaModelAPIProvider } from "./providers/meta/MetaModelAPIProvider.js";
 import { EdgeTTSProvider } from "./providers/tts/EdgeTTSProvider.js";
 import { ResearchAgent } from "./agents/research/ResearchAgent.js";
 import { TeachingAgent } from "./agents/teaching/TeachingAgent.js";
@@ -26,16 +27,17 @@ app.use(express.json());
 const storageDir = path.resolve(process.cwd(), "storage/jobs");
 app.use("/api/jobs/media", express.static(storageDir));
 
-// Initialize agent graph
-const fireworks = new FireworksLlamaProvider();
+// Initialize provider hierarchy (Meta Model API -> Fireworks -> Baseten -> Local Emulator)
+const llmProvider = new UnifiedLLMProvider();
+const metaProvider = new MetaModelAPIProvider();
 const tts = new EdgeTTSProvider();
 
-const researchAgent = new ResearchAgent(fireworks);
-const teachingAgent = new TeachingAgent(fireworks);
+const researchAgent = new ResearchAgent(llmProvider);
+const teachingAgent = new TeachingAgent(llmProvider);
 const simulationAgent = new SimulationAgent();
 const visualPlanningAgent = new VisualPlanningAgent();
 const narrationAgent = new NarrationAgent(tts);
-const criticAgent = new CriticAgent(fireworks);
+const criticAgent = new CriticAgent(llmProvider);
 
 const orchestrator = new OrchestratorAgent(
   researchAgent,
@@ -46,14 +48,60 @@ const orchestrator = new OrchestratorAgent(
   criticAgent
 );
 
-// Routes
+// Health check with active provider diagnostics
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
-    modelProvider: fireworks.isConfigured() ? "fireworks-llama-3.3-70b" : "meta-open-weight-emulator",
-    ttsProvider: "edge-tts",
+    activeLLMProvider: llmProvider.getActiveProviderName(),
+    isRealModelConnected: llmProvider.isRealModelConnected(),
+    metaModelApiConfigured: metaProvider.isConfigured(),
+    metaTextModel: metaProvider.getTextModel(),
+    metaImageModel: metaProvider.getImageModel(),
+    ttsProvider: "edge-tts (neural)",
     timestamp: new Date().toISOString(),
   });
+});
+
+// Explicit connectivity test endpoint for Meta Model API (Muse Spark & Muse Image)
+app.post("/api/meta/test-connection", async (req, res) => {
+  if (!metaProvider.isConfigured()) {
+    return res.status(400).json({
+      success: false,
+      configured: false,
+      error: "MODEL_API_KEY is not set. Please set MODEL_API_KEY in backend/.env or your environment.",
+      setupInstructions: {
+        docUrl: "https://dev.meta.ai/docs/overview",
+        envVar: "MODEL_API_KEY",
+        models: {
+          text: metaProvider.getTextModel(),
+          image: metaProvider.getImageModel(),
+        },
+      },
+    });
+  }
+
+  try {
+    const testPrompt = req.body.prompt || "Explain binary search in three steps and return a concise educational explanation.";
+    const startTime = Date.now();
+    const result = await metaProvider.generateCompletion([
+      { role: "user", content: testPrompt }
+    ]);
+    const durationMs = Date.now() - startTime;
+
+    res.json({
+      success: true,
+      configured: true,
+      model: metaProvider.getTextModel(),
+      durationMs,
+      response: result,
+    });
+  } catch (err: any) {
+    res.status(502).json({
+      success: false,
+      configured: true,
+      error: err.message,
+    });
+  }
 });
 
 // Create and trigger a generation job
@@ -131,6 +179,6 @@ app.post("/api/jobs/:id/regenerate-segment", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Concept2Motion Backend listening at http://localhost:${PORT}`);
+app.listen(Number(PORT), "0.0.0.0", () => {
+  console.log(`Concept2Motion Backend listening at http://0.0.0.0:${PORT}`);
 });
