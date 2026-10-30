@@ -498,14 +498,21 @@ export default function App() {
                 {selectedTab === 'video' && (
                   <div className="flex flex-col gap-4">
                     {activeJob.videoUrl ? (
-                      <div className="rounded-2xl overflow-hidden border border-slate-800 bg-black aspect-video relative shadow-2xl">
-                        <video
-                          key={activeJob.videoUrl}
-                          src={activeJob.videoUrl}
-                          controls
-                          autoPlay
-                          className="w-full h-full object-contain"
-                        />
+                      <div className="flex flex-col items-center">
+                        <div className="rounded-3xl overflow-hidden border-2 border-slate-700/80 bg-black aspect-[9/16] w-full max-w-[360px] max-h-[640px] relative shadow-2xl ring-4 ring-slate-900/50">
+                          <video
+                            key={activeJob.videoUrl}
+                            src={activeJob.videoUrl}
+                            controls
+                            autoPlay
+                            playsInline
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="mt-2 text-xs text-slate-400 font-mono flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                          9:16 Vertical Reel Format (1080x1920)
+                        </div>
                       </div>
                     ) : (
                       <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/40 p-12 flex flex-col items-center justify-center text-center gap-3">

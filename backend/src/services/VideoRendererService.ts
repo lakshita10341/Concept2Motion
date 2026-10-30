@@ -35,40 +35,44 @@ export class VideoRendererService {
       .replace(/'/g, "&apos;");
   }
 
-  private generateSceneSVG(scene: any, index: number, width = 1920, height = 1080): string {
-    const rawTitle = scene.title || "Technical Concept Explanation";
+  /**
+   * Generates a 9:16 Vertical Reel format SVG (1080x1920)
+   */
+  private generateSceneSVG(scene: any, index: number, width = 1080, height = 1920): string {
+    const rawTitle = scene.title || "Technical Concept";
     const title = this.escapeXml(rawTitle);
     const props = scene.customProps || {};
-    const explanation = this.escapeXml(props.explanation || scene.concept || "Educational Concept Walkthrough");
+    const explanation = this.escapeXml(props.explanation || scene.concept || "Concept Walkthrough");
     const algo = props.algorithm;
 
-    // Check visualization type
     const isBinarySearch = algo === "Binary Search";
     const isBloom = algo === "Bloom Filter";
 
     let centerVisualSvg = "";
-    let badgeText = "ARCHITECTURE / PROTOCOL";
+    let badgeText = `SCENE ${index + 1}`;
 
     if (isBloom) {
-      // 1. Bloom Filter Bit Array
-      badgeText = "BLOOM FILTER BIT ARRAY";
+      badgeText = "BLOOM FILTER";
       const state = props.simulationState || {};
       const bitArray = state.array || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
       const hashIndices = new Set(state.hashIndices || []);
       const currentItem = state.currentItem ? this.escapeXml(state.currentItem) : null;
       const action = state.action || "init";
 
-      const boxWidth = 130;
-      const boxHeight = 130;
+      // 2 rows of 5 boxes for vertical phone display
+      const boxSize = 150;
       const gap = 24;
-      const totalWidth = bitArray.length * boxWidth + (bitArray.length - 1) * gap;
-      const startX = (width - totalWidth) / 2;
-      const startY = height / 2 - 30;
+      const cols = 5;
+      const totalGridW = cols * boxSize + (cols - 1) * gap;
+      const startX = (width - totalGridW) / 2;
+      const startY = height / 2 - 200;
 
       let boxes = "";
       bitArray.forEach((val: number, i: number) => {
-        const x = startX + i * (boxWidth + gap);
-        const y = startY;
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const x = startX + col * (boxSize + gap);
+        const y = startY + row * (boxSize + gap + 40);
         const isHighlighted = hashIndices.has(i);
 
         let bgColor = val === 1 ? "#1e3a5f" : "#0f172a";
@@ -87,20 +91,11 @@ export class VideoRendererService {
           }
         }
 
-        const pointerLabel = isHighlighted ? (action === "insert" ? "SET (hash)" : "PROBE") : "";
-
         boxes += `
           <g transform="translate(${x}, ${y})">
-            <rect width="${boxWidth}" height="${boxHeight}" rx="16" fill="${bgColor}" stroke="${strokeColor}" stroke-width="4" />
-            <text x="${boxWidth / 2}" y="${boxHeight / 2 + 16}" font-family="DejaVu Sans, Liberation Sans, Arial" font-size="48" font-weight="bold" fill="${textColor}" text-anchor="middle">${val}</text>
-            <text x="${boxWidth / 2}" y="${boxHeight + 35}" font-family="DejaVu Sans Mono, Liberation Mono, monospace" font-size="20" fill="#94a3b8" text-anchor="middle">bit [${i}]</text>
-            ${
-              pointerLabel
-                ? `<path d="M ${boxWidth / 2} -25 L ${boxWidth / 2} -8" stroke="#38bdf8" stroke-width="4" />
-                   <rect x="${boxWidth / 2 - 60}" y="-65" width="120" height="32" rx="8" fill="#0284c7" />
-                   <text x="${boxWidth / 2}" y="-44" font-family="DejaVu Sans, Liberation Sans, Arial" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">${pointerLabel}</text>`
-                : ""
-            }
+            <rect width="${boxSize}" height="${boxSize}" rx="20" fill="${bgColor}" stroke="${strokeColor}" stroke-width="4" />
+            <text x="${boxSize / 2}" y="${boxSize / 2 + 18}" font-family="DejaVu Sans, Arial" font-size="52" font-weight="bold" fill="${textColor}" text-anchor="middle">${val}</text>
+            <text x="${boxSize / 2}" y="${boxSize + 32}" font-family="DejaVu Sans Mono, monospace" font-size="20" fill="#94a3b8" text-anchor="middle">bit [${i}]</text>
           </g>
         `;
       });
@@ -108,8 +103,7 @@ export class VideoRendererService {
       if (currentItem) badgeText = `${action.toUpperCase()}: "${currentItem}"`;
 
     } else if (isBinarySearch) {
-      // 2. Binary Search Array & Pointers
-      badgeText = "TARGET: 42";
+      badgeText = "BINARY SEARCH";
       const state = props.simulationState || {};
       const array = state.array || [7, 14, 21, 28, 35, 42, 49, 56, 63];
       const left = state.left ?? 0;
@@ -117,17 +111,20 @@ export class VideoRendererService {
       const mid = state.mid ?? null;
       const eliminated = new Set(state.eliminated || []);
 
-      const boxWidth = 140;
-      const boxHeight = 140;
+      // 3x3 Grid of elements tailored for vertical phone screens
+      const boxSize = 160;
       const gap = 30;
-      const totalArrayWidth = array.length * boxWidth + (array.length - 1) * gap;
-      const startX = (width - totalArrayWidth) / 2;
-      const startY = height / 2 - 40;
+      const cols = 3;
+      const gridW = cols * boxSize + (cols - 1) * gap;
+      const startX = (width - gridW) / 2;
+      const startY = height / 2 - 320;
 
       let boxes = "";
       array.forEach((val: number, i: number) => {
-        const x = startX + i * (boxWidth + gap);
-        const y = startY;
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const x = startX + col * (boxSize + gap);
+        const y = startY + row * (boxSize + gap + 50);
 
         let bgColor = "#1e293b";
         let strokeColor = "#475569";
@@ -136,14 +133,14 @@ export class VideoRendererService {
 
         if (eliminated.has(i)) {
           bgColor = "#0f172a";
-          strokeColor = "#334155";
-          textColor = "#64748b";
+          strokeColor = "#1e293b";
+          textColor = "#475569";
         }
 
         if (i === mid && state.status === "found") {
           bgColor = "#059669";
           strokeColor = "#34d399";
-          pointerLabel = "MID (MATCH!)";
+          pointerLabel = "MATCH!";
         } else if (i === mid) {
           bgColor = "#2563eb";
           strokeColor = "#60a5fa";
@@ -158,14 +155,13 @@ export class VideoRendererService {
 
         boxes += `
           <g transform="translate(${x}, ${y})">
-            <rect width="${boxWidth}" height="${boxHeight}" rx="16" fill="${bgColor}" stroke="${strokeColor}" stroke-width="4" />
-            <text x="${boxWidth / 2}" y="${boxHeight / 2 + 16}" font-family="DejaVu Sans, Liberation Sans, Arial" font-size="44" font-weight="bold" fill="${textColor}" text-anchor="middle">${val}</text>
-            <text x="${boxWidth / 2}" y="${boxHeight + 35}" font-family="DejaVu Sans Mono, Liberation Mono, monospace" font-size="20" fill="#94a3b8" text-anchor="middle">idx: ${i}</text>
+            <rect width="${boxSize}" height="${boxSize}" rx="24" fill="${bgColor}" stroke="${strokeColor}" stroke-width="4" />
+            <text x="${boxSize / 2}" y="${boxSize / 2 + 18}" font-family="DejaVu Sans, Arial" font-size="48" font-weight="bold" fill="${textColor}" text-anchor="middle">${val}</text>
+            <text x="${boxSize / 2}" y="${boxSize + 32}" font-family="DejaVu Sans Mono, monospace" font-size="20" fill="#94a3b8" text-anchor="middle">idx: ${i}</text>
             ${
               pointerLabel
-                ? `<path d="M ${boxWidth / 2} -25 L ${boxWidth / 2} -8" stroke="#38bdf8" stroke-width="4" />
-                   <rect x="${boxWidth / 2 - 60}" y="-65" width="120" height="32" rx="8" fill="#0284c7" />
-                   <text x="${boxWidth / 2}" y="-44" font-family="DejaVu Sans, Liberation Sans, Arial" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">${pointerLabel}</text>`
+                ? `<rect x="${boxSize / 2 - 50}" y="-34" width="100" height="28" rx="8" fill="#0284c7" />
+                   <text x="${boxSize / 2}" y="-15" font-family="DejaVu Sans, Arial" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">${pointerLabel}</text>`
                 : ""
             }
           </g>
@@ -174,14 +170,12 @@ export class VideoRendererService {
       centerVisualSvg = boxes;
 
     } else {
-      // 3. Dynamic Technical Diagram / Architecture / Handshake Card
-      // Renders unique cards for SSL, DNS, TCP, Operating Systems, Trees, etc.
-      badgeText = `STAGE ${index + 1} OF ${scene.narrationSegmentIds?.length || 4}`;
+      // Vertical Architecture / Protocol Diagram for Reels
+      badgeText = `STEP ${index + 1} OF ${scene.narrationSegmentIds?.length || 3}`;
 
-      const cardWidth = 1400;
-      const cardHeight = 440;
-      const cardX = (width - cardWidth) / 2;
-      const cardY = height / 2 - 200;
+      const cardW = 920;
+      const cardX = (width - cardW) / 2;
+      const startY = height / 2 - 340;
 
       const step1Color = index >= 0 ? "#3b82f6" : "#334155";
       const step2Color = index >= 1 ? "#6366f1" : "#334155";
@@ -189,47 +183,32 @@ export class VideoRendererService {
       const step4Color = index >= 3 ? "#ec4899" : "#334155";
 
       centerVisualSvg = `
-        <g transform="translate(${cardX}, ${cardY})">
-          <!-- Glass Panel Background -->
-          <rect width="${cardWidth}" height="${cardHeight}" rx="28" fill="#0f172a" stroke="#1e293b" stroke-width="3" />
-          
-          <!-- Flow diagram nodes -->
-          <g transform="translate(100, 60)">
-            <!-- Node 1 -->
-            <rect x="0" y="0" width="240" height="110" rx="18" fill="${index === 0 ? "#1e3a5f" : "#1e293b"}" stroke="${step1Color}" stroke-width="3" />
-            <text x="120" y="45" font-family="DejaVu Sans, Arial" font-size="18" font-weight="bold" fill="#93c5fd" text-anchor="middle">CLIENT / USER</text>
-            <text x="120" y="78" font-family="DejaVu Sans, Arial" font-size="14" fill="#cbd5e1" text-anchor="middle">Initiates Request</text>
+        <g transform="translate(${cardX}, ${startY})">
+          <!-- Step 1 Card -->
+          <rect x="40" y="0" width="840" height="110" rx="20" fill="${index === 0 ? "#1e3a5f" : "#0f172a"}" stroke="${step1Color}" stroke-width="3" />
+          <text x="80" y="48" font-family="DejaVu Sans, Arial" font-size="20" font-weight="bold" fill="#60a5fa">1. CLIENT REQUEST</text>
+          <text x="80" y="82" font-family="DejaVu Sans, Arial" font-size="18" fill="#cbd5e1">Browser initiates connection &amp; sends client parameters</text>
 
-            <!-- Connector 1 -->
-            <path d="M 240 55 L 320 55" stroke="${index >= 1 ? "#60a5fa" : "#475569"}" stroke-width="4" stroke-dasharray="6" />
+          <path d="M 460 110 L 460 145" stroke="${index >= 1 ? "#60a5fa" : "#334155"}" stroke-width="4" stroke-dasharray="6" />
 
-            <!-- Node 2 -->
-            <rect x="320" y="0" width="260" height="110" rx="18" fill="${index === 1 ? "#2e1065" : "#1e293b"}" stroke="${step2Color}" stroke-width="3" />
-            <text x="450" y="45" font-family="DejaVu Sans, Arial" font-size="18" font-weight="bold" fill="#c084fc" text-anchor="middle">VERIFICATION / CA</text>
-            <text x="450" y="78" font-family="DejaVu Sans, Arial" font-size="14" fill="#cbd5e1" text-anchor="middle">Cryptographic Proof</text>
+          <!-- Step 2 Card -->
+          <rect x="40" y="150" width="840" height="110" rx="20" fill="${index === 1 ? "#2e1065" : "#0f172a"}" stroke="${step2Color}" stroke-width="3" />
+          <text x="80" y="198" font-family="DejaVu Sans, Arial" font-size="20" font-weight="bold" fill="#c084fc">2. VERIFICATION &amp; AUTH</text>
+          <text x="80" y="232" font-family="DejaVu Sans, Arial" font-size="18" fill="#cbd5e1">Certificate Authority proof or resolver inspection</text>
 
-            <!-- Connector 2 -->
-            <path d="M 580 55 L 660 55" stroke="${index >= 2 ? "#818cf8" : "#475569"}" stroke-width="4" stroke-dasharray="6" />
+          <path d="M 460 260 L 460 295" stroke="${index >= 2 ? "#818cf8" : "#334155"}" stroke-width="4" stroke-dasharray="6" />
 
-            <!-- Node 3 -->
-            <rect x="660" y="0" width="260" height="110" rx="18" fill="${index === 2 ? "#064e3b" : "#1e293b"}" stroke="${step3Color}" stroke-width="3" />
-            <text x="790" y="45" font-family="DejaVu Sans, Arial" font-size="18" font-weight="bold" fill="#6ee7b7" text-anchor="middle">SERVER / ENDPOINT</text>
-            <text x="790" y="78" font-family="DejaVu Sans, Arial" font-size="14" fill="#cbd5e1" text-anchor="middle">Identity &amp; Handshake</text>
+          <!-- Step 3 Card -->
+          <rect x="40" y="300" width="840" height="110" rx="20" fill="${index === 2 ? "#064e3b" : "#0f172a"}" stroke="${step3Color}" stroke-width="3" />
+          <text x="80" y="348" font-family="DejaVu Sans, Arial" font-size="20" font-weight="bold" fill="#34d399">3. KEY EXCHANGE / HANDSHAKE</text>
+          <text x="80" y="382" font-family="DejaVu Sans, Arial" font-size="18" fill="#cbd5e1">Cryptographic handshake generates shared keys</text>
 
-            <!-- Connector 3 -->
-            <path d="M 920 55 L 1000 55" stroke="${index >= 3 ? "#34d399" : "#475569"}" stroke-width="4" stroke-dasharray="6" />
+          <path d="M 460 410 L 460 445" stroke="${index >= 3 ? "#34d399" : "#334155"}" stroke-width="4" stroke-dasharray="6" />
 
-            <!-- Node 4 -->
-            <rect x="1000" y="0" width="200" height="110" rx="18" fill="${index >= 3 ? "#831843" : "#1e293b"}" stroke="${step4Color}" stroke-width="3" />
-            <text x="1100" y="45" font-family="DejaVu Sans, Arial" font-size="18" font-weight="bold" fill="#f472b6" text-anchor="middle">SECURE LINK</text>
-            <text x="1100" y="78" font-family="DejaVu Sans, Arial" font-size="14" fill="#cbd5e1" text-anchor="middle">Encrypted Session</text>
-          </g>
-
-          <!-- Current Stage Focus Banner -->
-          <rect x="100" y="215" width="1200" height="175" rx="20" fill="#020617" stroke="#334155" stroke-width="2" />
-          <text x="140" y="260" font-family="DejaVu Sans, Arial" font-size="20" font-weight="bold" fill="#38bdf8">CORE CONCEPT IN FOCUS:</text>
-          <text x="140" y="300" font-family="DejaVu Sans, Arial" font-size="28" font-weight="800" fill="#f8fafc">${title}</text>
-          <text x="140" y="345" font-family="DejaVu Sans, Arial" font-size="20" fill="#94a3b8">${explanation}</text>
+          <!-- Step 4 Card -->
+          <rect x="40" y="450" width="840" height="110" rx="20" fill="${index >= 3 ? "#831843" : "#0f172a"}" stroke="${step4Color}" stroke-width="3" />
+          <text x="80" y="498" font-family="DejaVu Sans, Arial" font-size="20" font-weight="bold" fill="#f472b6">4. ENCRYPTED SESSION</text>
+          <text x="80" y="532" font-family="DejaVu Sans, Arial" font-size="18" fill="#cbd5e1">Fast, secure transmission with zero interception</text>
         </g>
       `;
     }
@@ -237,34 +216,44 @@ export class VideoRendererService {
     return `
       <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#090d16" />
-            <stop offset="100%" stop-color="#0f172a" />
+          <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#050811" />
+            <stop offset="50%" stop-color="#0b1329" />
+            <stop offset="100%" stop-color="#030712" />
           </linearGradient>
-          <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <linearGradient id="reelGrad" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stop-color="#3b82f6" />
-            <stop offset="100%" stop-color="#8b5cf6" />
+            <stop offset="50%" stop-color="#8b5cf6" />
+            <stop offset="100%" stop-color="#ec4899" />
           </linearGradient>
         </defs>
 
+        <!-- Vertical Reel Background -->
         <rect width="${width}" height="${height}" fill="url(#bg)" />
 
-        <!-- Header -->
-        <rect x="120" y="70" width="8" height="64" rx="4" fill="url(#cardGrad)" />
-        <text x="145" y="115" font-family="DejaVu Sans, Liberation Sans, Arial" font-size="44" font-weight="800" fill="#f8fafc">${title}</text>
-        <text x="145" y="150" font-family="DejaVu Sans, Liberation Sans, Arial" font-size="22" font-weight="500" fill="#94a3b8">Concept2Motion • Scene ${index + 1} • Educational Visualization</text>
+        <!-- Header Ribbon -->
+        <rect x="70" y="100" width="${width - 140}" height="8" rx="4" fill="url(#reelGrad)" />
+        
+        <!-- Header Category Badge -->
+        <rect x="70" y="130" width="220" height="46" rx="14" fill="#1e1b4b" stroke="#6366f1" stroke-width="2" />
+        <text x="180" y="160" font-family="DejaVu Sans, Arial" font-size="18" font-weight="bold" fill="#a5b4fc" text-anchor="middle">${badgeText}</text>
 
-        <!-- Dynamic Badge -->
-        <rect x="${width - 440}" y="75" width="320" height="60" rx="16" fill="#1e1b4b" stroke="#6366f1" stroke-width="2" />
-        <text x="${width - 280}" y="113" font-family="DejaVu Sans, Liberation Sans, Arial" font-size="20" font-weight="bold" fill="#818cf8" text-anchor="middle">${badgeText}</text>
+        <!-- Title -->
+        <text x="70" y="240" font-family="DejaVu Sans, Arial" font-size="48" font-weight="800" fill="#f8fafc">${title}</text>
+        <text x="70" y="285" font-family="DejaVu Sans, Arial" font-size="22" font-weight="500" fill="#94a3b8">Concept2Motion • Scene ${index + 1}</text>
 
-        <!-- Center Diagram / Visualization -->
+        <!-- Center Interactive Visual Component -->
         ${centerVisualSvg}
 
-        <!-- Bottom Subtitle / Explanation Card -->
-        <rect x="${(width - 1200) / 2}" y="${height - 180}" width="1200" height="95" rx="18" fill="#0f172a" stroke="#334155" stroke-width="2" />
-        <text x="${width / 2}" y="${height - 130}" font-family="DejaVu Sans, Liberation Sans, Arial" font-size="24" font-weight="600" fill="#38bdf8" text-anchor="middle">${explanation}</text>
-        <text x="${width / 2}" y="${height - 102}" font-family="DejaVu Sans, Liberation Sans, Arial" font-size="18" font-weight="400" fill="#94a3b8" text-anchor="middle">Concept2Motion • Meta Muse Spark Powered Video Generation</text>
+        <!-- Bottom Subtitle Card for Reels -->
+        <rect x="70" y="${height - 380}" width="${width - 140}" height="240" rx="28" fill="#0b1329" stroke="#1e293b" stroke-width="2" />
+        <text x="120" y="${height - 325}" font-family="DejaVu Sans, Arial" font-size="22" font-weight="bold" fill="#38bdf8">KEY TAKEAWAY</text>
+        <text x="120" y="${height - 275}" font-family="DejaVu Sans, Arial" font-size="28" font-weight="600" fill="#f8fafc">${explanation}</text>
+        <text x="120" y="${height - 225}" font-family="DejaVu Sans, Arial" font-size="20" fill="#94a3b8">Generated autonomously with Meta Muse Spark</text>
+
+        <!-- Progress bar at bottom -->
+        <rect x="70" y="${height - 90}" width="${width - 140}" height="6" rx="3" fill="#1e293b" />
+        <rect x="70" y="${height - 90}" width="${((index + 1) / (scene.narrationSegmentIds?.length || 3)) * (width - 140)}" height="6" rx="3" fill="url(#reelGrad)" />
       </svg>
     `;
   }
@@ -277,20 +266,23 @@ export class VideoRendererService {
     const videoOutPath = path.join(jobDir, "final_video.mp4");
     const sceneVideoPaths: string[] = [];
 
+    // Vertical 9:16 standard Reel resolution (1080 x 1920)
+    const reelWidth = 1080;
+    const reelHeight = 1920;
+
     for (let i = 0; i < storyboard.scenes.length; i++) {
       const scene = storyboard.scenes[i];
       const segment = script.segments[i];
-  
       const audioPath = path.join(jobDir, `${segment.segmentId}.mp3`);
       const svgPath = path.join(jobDir, `scene_${i + 1}.svg`);
       const pngPath = path.join(jobDir, `scene_${i + 1}.png`);
       const sceneVideoPath = path.join(jobDir, `scene_${i + 1}.mp4`);
 
-      const svgContent = this.generateSceneSVG(scene, i);
+      const svgContent = this.generateSceneSVG(scene, i, reelWidth, reelHeight);
       fs.writeFileSync(svgPath, svgContent, "utf-8");
 
       const resvg = new Resvg(svgContent, {
-        fitTo: { mode: "width", value: 1920 },
+        fitTo: { mode: "width", value: reelWidth },
         font: {
           loadSystemFonts: true,
           defaultFontFamily: "DejaVu Sans",
@@ -314,6 +306,7 @@ export class VideoRendererService {
             "-tune", "stillimage",
             "-c:a", "aac",
             "-b:a", "192k",
+            "-vf", `scale=${reelWidth}:${reelHeight}`,
             "-pix_fmt", "yuv420p",
             "-shortest",
             sceneVideoPath,
@@ -329,6 +322,7 @@ export class VideoRendererService {
             "-c:v", "libx264",
             "-tune", "stillimage",
             "-c:a", "aac",
+            "-vf", `scale=${reelWidth}:${reelHeight}`,
             "-pix_fmt", "yuv420p",
             sceneVideoPath,
           ];
