@@ -12,9 +12,10 @@ export class SimulationAgent {
   }
 
   async runSimulation(topic: string, algorithmParams?: { target?: number; array?: number[] }): Promise<SimulationResult> {
-    const isBinarySearch = topic.toLowerCase().includes("binary search");
-    const isBloomFilter = topic.toLowerCase().includes("bloom");
-    const isTree = topic.toLowerCase().includes("b-tree") || topic.toLowerCase().includes("tree");
+    const t = topic.toLowerCase();
+    const isBinarySearch = t.includes("binary search");
+    const isBloomFilter = t.includes("bloom");
+    const isTree = t.includes("b-tree") || t.includes("tree");
 
     let pythonScript = "";
     const target = algorithmParams?.target ?? 42;
@@ -54,7 +55,6 @@ def bloom_filter_simulation():
         }
     })
 
-    # Insertion
     for item in items_to_add:
         step += 1
         h1, h2, h3 = hash1(item, m), hash2(item, m), hash3(item, m)
@@ -73,7 +73,6 @@ def bloom_filter_simulation():
             }
         })
 
-    # Queries
     for query in test_queries:
         step += 1
         h1, h2, h3 = hash1(query, m), hash2(query, m), hash3(query, m)
@@ -101,8 +100,10 @@ if __name__ == "__main__":
     print(json.dumps(results))
     print("---OUTPUT_END---")
 `;
-    } else {
-      // Default to Binary Search
+      const res = await this.executor.execute(pythonScript, array, target);
+      return { ...res, algorithm: "Bloom Filter" };
+
+    } else if (isBinarySearch) {
       pythonScript = `
 import json
 import sys
@@ -197,13 +198,29 @@ if __name__ == "__main__":
     print(json.dumps(results))
     print("---OUTPUT_END---")
 `;
-    }
+      const res = await this.executor.execute(pythonScript, array, target);
+      return { ...res, algorithm: "Binary Search" };
 
-    const algoName = isBloomFilter ? "Bloom Filter" : isTree ? "B-Tree" : "Binary Search";
-    const res = await this.executor.execute(pythonScript, array, target);
-    return {
-      ...res,
-      algorithm: algoName,
-    };
+    } else {
+      // General Protocol / System / Architecture Simulation (e.g. SSL/TLS, DNS, Operating Systems, TCP)
+      pythonScript = `
+import json
+
+def protocol_trace():
+    return [
+        {"step": 1, "description": "Client initial handshake hello", "stateData": {"phase": "ClientHello", "cipherSuites": ["TLS_AES_256_GCM_SHA384"]}},
+        {"step": 2, "description": "Server certificate chain transmission & verification", "stateData": {"phase": "CertificateVerification", "caSigned": True}},
+        {"step": 3, "description": "Key exchange & symmetric session key generation", "stateData": {"phase": "KeyExchange", "encrypted": True}},
+        {"step": 4, "description": "Encrypted secure session established", "stateData": {"phase": "SecureSession", "trafficEncrypted": True}}
+    ]
+
+if __name__ == "__main__":
+    print("---OUTPUT_START---")
+    print(json.dumps(protocol_trace()))
+    print("---OUTPUT_END---")
+`;
+      const res = await this.executor.execute(pythonScript, array, target);
+      return { ...res, algorithm: "Protocol Handshake" };
+    }
   }
 }

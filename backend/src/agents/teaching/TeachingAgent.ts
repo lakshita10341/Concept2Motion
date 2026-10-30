@@ -9,33 +9,40 @@ export class TeachingAgent {
   }
 
   async generateScript(research: ResearchNotes, audienceLevel = "beginner", targetDuration = 60): Promise<TeachingScript> {
+    // English speech rate is ~140-150 words per minute => ~2.3 - 2.5 words per second
+    const totalWordsBudget = Math.round(targetDuration * 2.3);
+    const numSegments = targetDuration <= 45 ? 3 : targetDuration <= 60 ? 4 : 5;
+    const wordsPerSegment = Math.round(totalWordsBudget / numSegments);
+
     const prompt = `You are an Award-Winning STEM Educator and Scriptwriter.
-Transform the following verified research notes into a captivating, pedagogically sound, scene-by-scene educational narration script.
+Transform the following verified research notes into a captivating, pedagogically sound, scene-by-scene educational narration script in STANDARD ENGLISH.
+
+CRITICAL CONSTRAINTS:
+1. LANGUAGE: Standard English ONLY. Do not use Greek, Cyrillic, or non-English characters.
+2. DURATION CONSTRAINT:
+   - Target video duration: EXACTLY ~${targetDuration} seconds.
+   - TOTAL word count across all narration MUST BE approximately ${totalWordsBudget} words (around ${wordsPerSegment} words per segment).
+   - EXACTLY ${numSegments} concise segments.
+   - Keep narration punchy, direct, and tightly paced so it fits within the ${targetDuration}-second limit!
 
 Topic: ${research.topic}
 Audience Level: ${audienceLevel}
-Target Duration: ~${targetDuration} seconds (typically 4 to 6 concise segments).
 
 Research Notes:
 Core Concepts: ${research.coreConcepts.join(", ")}
 Key Steps: ${research.stepByStepBreakdown.join("; ")}
 Misconceptions to dispel: ${research.commonMisconceptions.join("; ")}
 
-Guidelines:
-1. Divide into 4-6 distinct segments.
-2. Segment narration must be natural, vivid, technically exact, and conversational.
-3. Explicitly state the learning outcome and concept for each segment.
-
 Output ONLY valid JSON matching this schema:
 {
-  "title": "Title of the video",
+  "title": "Clear English Title",
   "targetAudience": "${audienceLevel}",
   "segments": [
     {
       "segmentId": "seg_01",
       "concept": "Concept name",
       "learningOutcome": "What the viewer understands after this segment",
-      "narrationText": "Voiceover words spoken in this segment..."
+      "narrationText": "Voiceover words spoken in this segment (approx ${wordsPerSegment} words)..."
     }
   ]
 }`;
@@ -43,13 +50,12 @@ Output ONLY valid JSON matching this schema:
     try {
       const response = await this.llm.generateCompletion(
         [
-          { role: "system", content: "You write clear, accurate STEM video narration scripts. Always output strictly valid JSON without markdown wrapping." },
+          { role: "system", content: "You write clear, accurate STEM video narration scripts in plain English. Always output strictly valid JSON without markdown wrapping." },
           { role: "user", content: prompt }
         ],
         { jsonMode: true, temperature: 0.2 }
       );
 
-      // Clean markdown code blocks if model included ```json ... ```
       let cleaned = response.trim();
       if (cleaned.startsWith("```")) {
         cleaned = cleaned.replace(/^```[a-zA-Z]*\n?/, "").replace(/```$/, "").trim();
@@ -65,7 +71,7 @@ Output ONLY valid JSON matching this schema:
               segmentId: "seg_01",
               concept: "Probabilistic Space Efficiency",
               learningOutcome: "Understand how Bloom filters test membership without storing full data",
-              narrationText: "Databases often handle millions of requests. Before executing a slow disk lookup, they consult a Bloom filter: a compact probabilistic bit array that tells us if an item is definitely absent."
+              narrationText: "Databases handle millions of requests. Before executing a slow disk lookup, they consult a Bloom filter: a compact probabilistic bit array that tells us if an item is definitely absent."
             },
             {
               segmentId: "seg_02",
@@ -91,12 +97,12 @@ Output ONLY valid JSON matching this schema:
 
       // Binary Search fallback
       return {
-        title: "Mastering Binary Search: The Power of Divide & Conquer",
+        title: "Mastering Binary Search: The Power of Divide and Conquer",
         targetAudience: audienceLevel,
         segments: [
           {
             segmentId: "seg_01",
-            concept: "The Search Dilemma & Sorted Invariant",
+            concept: "The Search Dilemma and Sorted Invariant",
             learningOutcome: "Understand why ordered data enables logarithmic search instead of linear scanning",
             narrationText: "Imagine looking for a name in a phone book. You don't read every page from the start. Because the names are sorted, you open right to the middle. This is the foundation of Binary Search."
           },
