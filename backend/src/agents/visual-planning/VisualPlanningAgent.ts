@@ -92,19 +92,24 @@ export class VisualPlanningAgent {
           explanation: curState.description,
         };
       } else {
-        // Universal / Protocol / Architecture / Network Topics (e.g. SSL, DNS, B-Tree, TCP, OS Scheduling)
+        // Universal / Protocol / Architecture / Distributed / Network Topics
         visualType = "diagram";
-        component = "ProtocolArchitectureDiagram";
+        component = "ArchitectureDiagram";
         simStateIds = [idx + 1];
 
+        const matchedSimState = states[Math.min(idx, states.length - 1)];
+
         customProps = {
-          algorithm: "ProtocolDiagram",
+          algorithm: algo || "System Architecture",
           stepNumber: idx + 1,
           totalSteps: script.segments.length,
           conceptTitle: seg.concept,
           learningOutcome: seg.learningOutcome,
           narrationSummary: seg.narrationText.slice(0, 110) + "...",
           explanation: seg.learningOutcome,
+          simulationState: matchedSimState?.stateData || {},
+          allConcepts: script.segments.map((s) => s.concept),
+          allOutcomes: script.segments.map((s) => s.learningOutcome),
         };
       }
 

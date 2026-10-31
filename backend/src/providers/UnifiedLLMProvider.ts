@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import { LLMMessage, LLMProvider } from "./fireworks/FireworksLlamaProvider.js";
 import { MetaModelAPIProvider } from "./meta/MetaModelAPIProvider.js";
 import { FireworksLlamaProvider } from "./fireworks/FireworksLlamaProvider.js";

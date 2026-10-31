@@ -1,4 +1,4 @@
-import { LLMProvider } from "../providers/fireworks/FireworksLlamaProvider.js";
+import { LLMProvider } from "../../providers/fireworks/FireworksLlamaProvider.js";
 import { ResearchNotes } from "../../shared/types/index.js";
 
 export class ResearchAgent {
@@ -44,7 +44,18 @@ Return ONLY valid JSON matching this structure:
         { jsonMode: true, temperature: 0.1 }
       );
 
-      const parsed = JSON.parse(response);
+      let cleaned = response.trim();
+      if (cleaned.includes("```")) {
+        const match = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        cleaned = match ? match[1].trim() : cleaned.replace(/^```[a-zA-Z]*\n?/, "").replace(/```$/, "").trim();
+      }
+      const firstBrace = cleaned.indexOf("{");
+      const lastBrace = cleaned.lastIndexOf("}");
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+      }
+
+      const parsed = JSON.parse(cleaned);
       return parsed;
     } catch (err) {
       // Deterministic authoritative fallback for binary search and other core topics

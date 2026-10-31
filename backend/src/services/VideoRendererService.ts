@@ -169,91 +169,245 @@ export class VideoRendererService {
       });
       centerVisualSvg = boxes;
 
+    } else if (algo === "Raft Consensus" || (rawTitle && rawTitle.toLowerCase().includes("raft"))) {
+      // 5-Node Raft Cluster Architecture Visualization for Reels
+      badgeText = `RAFT CONSENSUS • TERM ${index >= 1 ? "2" : "1"}`;
+      const simState = props.simulationState || {};
+      const action = simState.action || (index === 0 ? "TIMEOUT" : index === 1 ? "VOTE" : index === 2 ? "LEADER" : "COMMITTED");
+
+      const cx = width / 2;
+      const cy = height / 2 - 120;
+      const r = 260; // cluster radius
+
+      const nodeCoords = [
+        { id: "Node A", angle: -90, role: index >= 2 ? "LEADER" : index === 1 ? "CANDIDATE" : "FOLLOWER" },
+        { id: "Node B", angle: -18, role: index >= 2 ? "FOLLOWER (Synced)" : "FOLLOWER" },
+        { id: "Node C", angle: 54, role: index >= 2 ? "FOLLOWER (Synced)" : "FOLLOWER" },
+        { id: "Node D", angle: 126, role: "FOLLOWER" },
+        { id: "Node E", angle: 198, role: "FOLLOWER" },
+      ];
+
+      let clusterNodesSvg = "";
+      let connectingBeams = "";
+
+      nodeCoords.forEach((node) => {
+        const rad = (node.angle * Math.PI) / 180;
+        const nx = cx + r * Math.cos(rad);
+        const ny = cy + r * Math.sin(rad);
+
+        const isLeader = node.role.startsWith("LEADER");
+        const isCandidate = node.role === "CANDIDATE";
+        const isQuorumFollower = index >= 2 && (node.id === "Node B" || node.id === "Node C");
+
+        let nodeFill = "#0f172a";
+        let nodeStroke = "#334155";
+        let badgeBg = "#1e293b";
+        let badgeColor = "#94a3b8";
+
+        if (isLeader) {
+          nodeFill = "#064e3b";
+          nodeStroke = "#10b981";
+          badgeBg = "#047857";
+          badgeColor = "#ffffff";
+        } else if (isCandidate) {
+          nodeFill = "#78350f";
+          nodeStroke = "#f59e0b";
+          badgeBg = "#b45309";
+          badgeColor = "#ffffff";
+        } else if (isQuorumFollower) {
+          nodeFill = "#1e3a5f";
+          nodeStroke = "#38bdf8";
+          badgeBg = "#0284c7";
+          badgeColor = "#ffffff";
+        }
+
+        // Draw connection beam from Leader/Candidate to Quorum peers
+        if ((isLeader || isCandidate) && (node.id === "Node A")) {
+          const bRad = (nodeCoords[1].angle * Math.PI) / 180;
+          const cRad = (nodeCoords[2].angle * Math.PI) / 180;
+          connectingBeams += `
+            <line x1="${nx}" y1="${ny}" x2="${cx + r * Math.cos(bRad)}" y2="${cy + r * Math.sin(bRad)}" stroke="#10b981" stroke-width="4" stroke-dasharray="8 6" />
+            <line x1="${nx}" y1="${ny}" x2="${cx + r * Math.cos(cRad)}" y2="${cy + r * Math.sin(cRad)}" stroke="#10b981" stroke-width="4" stroke-dasharray="8 6" />
+          `;
+        }
+
+        clusterNodesSvg += `
+          <g transform="translate(${nx}, ${ny})">
+            <circle r="68" fill="${nodeFill}" stroke="${nodeStroke}" stroke-width="4" />
+            <text y="-8" font-family="DejaVu Sans Mono, monospace" font-size="22" font-weight="bold" fill="#f8fafc" text-anchor="middle">${node.id}</text>
+            <rect x="-60" y="14" width="120" height="28" rx="8" fill="${badgeBg}" />
+            <text y="33" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="${badgeColor}" text-anchor="middle">${node.role}</text>
+          </g>
+        `;
+      });
+
+      centerVisualSvg = `
+        <g>
+          <!-- Central Cluster Core -->
+          <circle cx="${cx}" cy="${cy}" r="340" fill="#070d1a" stroke="#1e293b" stroke-width="2" stroke-dasharray="10 10" />
+          
+          <!-- Communication Beams -->
+          ${connectingBeams}
+
+          <!-- Cluster Server Nodes -->
+          ${clusterNodesSvg}
+
+          <!-- Center Status Card -->
+          <g transform="translate(${cx - 180}, ${cy - 45})">
+            <rect width="360" height="90" rx="16" fill="#0b1329" stroke="#38bdf8" stroke-width="2" />
+            <text x="180" y="32" font-family="DejaVu Sans Mono, monospace" font-size="16" font-weight="bold" fill="#38bdf8" text-anchor="middle">STATUS: ${action}</text>
+            <text x="180" y="64" font-family="DejaVu Sans Mono, monospace" font-size="14" fill="#94a3b8" text-anchor="middle">QUORUM: 3/5 NODES (MAJORITY)</text>
+          </g>
+        </g>
+      `;
+
     } else {
-      // Vertical Architecture / Protocol Diagram for Reels
-      badgeText = `STEP ${index + 1} OF ${scene.narrationSegmentIds?.length || 3}`;
+      // Universal Dynamic Multi-Stage Architecture Cards (DNS, Protocols, Caches, OS, DBs)
+      badgeText = `STEP ${index + 1} OF ${scene.narrationSegmentIds?.length || 4}`;
 
       const cardW = 920;
       const cardX = (width - cardW) / 2;
       const startY = height / 2 - 340;
 
-      const step1Color = index >= 0 ? "#3b82f6" : "#334155";
-      const step2Color = index >= 1 ? "#6366f1" : "#334155";
-      const step3Color = index >= 2 ? "#10b981" : "#334155";
-      const step4Color = index >= 3 ? "#ec4899" : "#334155";
+      const concepts = (props.allConcepts && props.allConcepts.length > 0)
+        ? props.allConcepts
+        : ["1. System Initialization", "2. State Transformation", "3. Invariant Verification", "4. Deterministic Output"];
+
+      const outcomes = (props.allOutcomes && props.allOutcomes.length > 0)
+        ? props.allOutcomes
+        : [
+            "Initialize parameters and system invariants",
+            "Transform states and process inputs",
+            "Maintain consistency guarantees",
+            "Return verified output with strict bounds"
+          ];
+
+      const colors = [
+        { activeFill: "#1e3a5f", activeStroke: "#38bdf8", text: "#60a5fa" },
+        { activeFill: "#2e1065", activeStroke: "#a855f7", text: "#c084fc" },
+        { activeFill: "#064e3b", activeStroke: "#10b981", text: "#34d399" },
+        { activeFill: "#831843", activeStroke: "#ec4899", text: "#f472b6" },
+      ];
+
+      let stepCardsSvg = "";
+      const displayCount = Math.min(4, Math.max(concepts.length, 3));
+
+      for (let sIdx = 0; sIdx < displayCount; sIdx++) {
+        const cTitle = this.escapeXml(concepts[sIdx] || `Phase ${sIdx + 1}`);
+        const cDesc = this.escapeXml((outcomes[sIdx] || "System invariant guaranteed").slice(0, 75));
+        const isActive = index === sIdx;
+        const isPassed = index > sIdx;
+        const style = colors[sIdx % colors.length];
+
+        const cardFill = isActive ? style.activeFill : isPassed ? "#1e293b" : "#0f172a";
+        const cardStroke = isActive ? style.activeStroke : isPassed ? "#475569" : "#334155";
+        const strokeW = isActive ? 4 : 2;
+        const titleColor = isActive ? style.text : isPassed ? "#cbd5e1" : "#64748b";
+        const descColor = isActive ? "#ffffff" : isPassed ? "#94a3b8" : "#475569";
+        const yOffset = sIdx * 150;
+
+        stepCardsSvg += `
+          <!-- Step ${sIdx + 1} Card -->
+          <rect x="40" y="${yOffset}" width="840" height="110" rx="20" fill="${cardFill}" stroke="${cardStroke}" stroke-width="${strokeW}" />
+          ${isActive ? `<circle cx="64" cy="${yOffset + 55}" r="8" fill="${style.activeStroke}" />` : ""}
+          <text x="${isActive ? 90 : 80}" y="${yOffset + 48}" font-family="DejaVu Sans, Arial" font-size="20" font-weight="bold" fill="${titleColor}">${sIdx + 1}. ${cTitle.toUpperCase()}</text>
+          <text x="${isActive ? 90 : 80}" y="${yOffset + 82}" font-family="DejaVu Sans, Arial" font-size="17" fill="${descColor}">${cDesc}</text>
+          ${
+            sIdx < displayCount - 1
+              ? `<path d="M 460 ${yOffset + 110} L 460 ${yOffset + 145}" stroke="${index > sIdx ? style.activeStroke : "#334155"}" stroke-width="4" stroke-dasharray="6" />`
+              : ""
+          }
+        `;
+      }
 
       centerVisualSvg = `
         <g transform="translate(${cardX}, ${startY})">
-          <!-- Step 1 Card -->
-          <rect x="40" y="0" width="840" height="110" rx="20" fill="${index === 0 ? "#1e3a5f" : "#0f172a"}" stroke="${step1Color}" stroke-width="3" />
-          <text x="80" y="48" font-family="DejaVu Sans, Arial" font-size="20" font-weight="bold" fill="#60a5fa">1. CLIENT REQUEST</text>
-          <text x="80" y="82" font-family="DejaVu Sans, Arial" font-size="18" fill="#cbd5e1">Browser initiates connection &amp; sends client parameters</text>
-
-          <path d="M 460 110 L 460 145" stroke="${index >= 1 ? "#60a5fa" : "#334155"}" stroke-width="4" stroke-dasharray="6" />
-
-          <!-- Step 2 Card -->
-          <rect x="40" y="150" width="840" height="110" rx="20" fill="${index === 1 ? "#2e1065" : "#0f172a"}" stroke="${step2Color}" stroke-width="3" />
-          <text x="80" y="198" font-family="DejaVu Sans, Arial" font-size="20" font-weight="bold" fill="#c084fc">2. VERIFICATION &amp; AUTH</text>
-          <text x="80" y="232" font-family="DejaVu Sans, Arial" font-size="18" fill="#cbd5e1">Certificate Authority proof or resolver inspection</text>
-
-          <path d="M 460 260 L 460 295" stroke="${index >= 2 ? "#818cf8" : "#334155"}" stroke-width="4" stroke-dasharray="6" />
-
-          <!-- Step 3 Card -->
-          <rect x="40" y="300" width="840" height="110" rx="20" fill="${index === 2 ? "#064e3b" : "#0f172a"}" stroke="${step3Color}" stroke-width="3" />
-          <text x="80" y="348" font-family="DejaVu Sans, Arial" font-size="20" font-weight="bold" fill="#34d399">3. KEY EXCHANGE / HANDSHAKE</text>
-          <text x="80" y="382" font-family="DejaVu Sans, Arial" font-size="18" fill="#cbd5e1">Cryptographic handshake generates shared keys</text>
-
-          <path d="M 460 410 L 460 445" stroke="${index >= 3 ? "#34d399" : "#334155"}" stroke-width="4" stroke-dasharray="6" />
-
-          <!-- Step 4 Card -->
-          <rect x="40" y="450" width="840" height="110" rx="20" fill="${index >= 3 ? "#831843" : "#0f172a"}" stroke="${step4Color}" stroke-width="3" />
-          <text x="80" y="498" font-family="DejaVu Sans, Arial" font-size="20" font-weight="bold" fill="#f472b6">4. ENCRYPTED SESSION</text>
-          <text x="80" y="532" font-family="DejaVu Sans, Arial" font-size="18" fill="#cbd5e1">Fast, secure transmission with zero interception</text>
+          ${stepCardsSvg}
         </g>
       `;
     }
+
+    const keyPillText = isBloom
+      ? "GUARANTEED ZERO FALSE NEGATIVES"
+      : isBinarySearch
+      ? (index === 0 ? "O(log n) SEARCH HORIZON" : index === 3 ? "DIRECT LOGARITHMIC HIT" : "HALVING SEARCH BOUNDS")
+      : this.escapeXml((props.learningOutcome || "SYSTEM INVARIANT").toUpperCase().slice(0, 36));
 
     return `
       <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#050811" />
-            <stop offset="50%" stop-color="#0b1329" />
-            <stop offset="100%" stop-color="#030712" />
+            <stop offset="0%" stop-color="#07090e" />
+            <stop offset="40%" stop-color="#0b101c" />
+            <stop offset="100%" stop-color="#05070c" />
           </linearGradient>
-          <linearGradient id="reelGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#3b82f6" />
-            <stop offset="50%" stop-color="#8b5cf6" />
-            <stop offset="100%" stop-color="#ec4899" />
+          <linearGradient id="hudGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#06b6d4" />
+            <stop offset="50%" stop-color="#3b82f6" />
+            <stop offset="100%" stop-color="#8b5cf6" />
+          </linearGradient>
+          <linearGradient id="pillGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#10b981" />
+            <stop offset="100%" stop-color="#06b6d4" />
           </linearGradient>
         </defs>
 
-        <!-- Vertical Reel Background -->
+        <!-- Vertical 9:16 Canvas (#07090E Modern Dark Slate) -->
         <rect width="${width}" height="${height}" fill="url(#bg)" />
 
-        <!-- Header Ribbon -->
-        <rect x="70" y="100" width="${width - 140}" height="8" rx="4" fill="url(#reelGrad)" />
-        
-        <!-- Header Category Badge -->
-        <rect x="70" y="130" width="220" height="46" rx="14" fill="#1e1b4b" stroke="#6366f1" stroke-width="2" />
-        <text x="180" y="160" font-family="DejaVu Sans, Arial" font-size="18" font-weight="bold" fill="#a5b4fc" text-anchor="middle">${badgeText}</text>
+        <!-- Subtle Engineering Grid Lines (Upper 2/3) -->
+        <line x1="70" y1="200" x2="${width - 70}" y2="200" stroke="#1e293b" stroke-width="1" stroke-dasharray="8 8" />
+        <line x1="70" y1="1300" x2="${width - 70}" y2="1300" stroke="#1e293b" stroke-width="1" stroke-dasharray="8 8" />
 
-        <!-- Title -->
-        <text x="70" y="240" font-family="DejaVu Sans, Arial" font-size="48" font-weight="800" fill="#f8fafc">${title}</text>
-        <text x="70" y="285" font-family="DejaVu Sans, Arial" font-size="22" font-weight="500" fill="#94a3b8">Concept2Motion • Scene ${index + 1}</text>
+        <!-- Top Engineering HUD (Telemetric Status) -->
+        <rect x="70" y="80" width="${width - 140}" height="4" rx="2" fill="url(#hudGrad)" />
+        <g transform="translate(70, 105)">
+          <rect width="210" height="32" rx="8" fill="#0f172a" stroke="#334155" stroke-width="1.5" />
+          <circle cx="16" cy="16" r="5" fill="#10b981" />
+          <text x="32" y="22" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#38bdf8" letter-spacing="1">C2M • REEL V2</text>
 
-        <!-- Center Interactive Visual Component -->
-        ${centerVisualSvg}
+          <rect x="225" width="240" height="32" rx="8" fill="#0f172a" stroke="#334155" stroke-width="1.5" />
+          <text x="240" y="22" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#a5b4fc" letter-spacing="1">${badgeText}</text>
 
-        <!-- Bottom Subtitle Card for Reels -->
-        <rect x="70" y="${height - 380}" width="${width - 140}" height="240" rx="28" fill="#0b1329" stroke="#1e293b" stroke-width="2" />
-        <text x="120" y="${height - 325}" font-family="DejaVu Sans, Arial" font-size="22" font-weight="bold" fill="#38bdf8">KEY TAKEAWAY</text>
-        <text x="120" y="${height - 275}" font-family="DejaVu Sans, Arial" font-size="28" font-weight="600" fill="#f8fafc">${explanation}</text>
-        <text x="120" y="${height - 225}" font-family="DejaVu Sans, Arial" font-size="20" fill="#94a3b8">Generated autonomously with Meta Muse Spark</text>
+          <rect x="${width - 140 - 150}" width="150" height="32" rx="8" fill="#0f172a" stroke="#334155" stroke-width="1.5" />
+          <text x="${width - 140 - 75}" y="22" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#94a3b8" text-anchor="middle">BEAT ${index + 1} / 4</text>
+        </g>
 
-        <!-- Progress bar at bottom -->
-        <rect x="70" y="${height - 90}" width="${width - 140}" height="6" rx="3" fill="#1e293b" />
-        <rect x="70" y="${height - 90}" width="${((index + 1) / (scene.narrationSegmentIds?.length || 3)) * (width - 140)}" height="6" rx="3" fill="url(#reelGrad)" />
+        <!-- Main Title & Topic Header -->
+        <text x="70" y="200" font-family="DejaVu Sans, Arial" font-size="44" font-weight="800" fill="#f8fafc">${title}</text>
+        <text x="70" y="238" font-family="DejaVu Sans Mono, monospace" font-size="18" font-weight="600" fill="#64748b" letter-spacing="1.5">HARDWARE-TIMED COGNITIVE VISUALS</text>
+
+        <!-- Center Visual Active Canvas (Upper 2/3: y in 250 to 1350) -->
+        <g transform="translate(0, 0)">
+          ${centerVisualSvg}
+        </g>
+
+        <!-- Lower 1/3 Safe Zone: High-Retention Reel Karaoke Subtitle Card -->
+        <g transform="translate(70, ${height - 400})">
+          <!-- Card Backdrop with glowing border -->
+          <rect width="${width - 140}" height="280" rx="24" fill="#0c101d" stroke="#1e293b" stroke-width="2" />
+          
+          <!-- Live Telemetry Pill -->
+          <rect x="36" y="28" width="180" height="30" rx="8" fill="#047857" />
+          <circle cx="52" cy="43" r="4" fill="#6ee7b7" />
+          <text x="66" y="49" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#ffffff" letter-spacing="1">TAKEAWAY BEAT</text>
+
+          <!-- Core Mechanical Insight -->
+          <text x="36" y="105" font-family="DejaVu Sans, Arial" font-size="28" font-weight="700" fill="#ffffff">${explanation}</text>
+
+          <!-- High-Retention Karaoke Pill Badge -->
+          <g transform="translate(36, 140)">
+            <rect width="${Math.min(width - 212, 600)}" height="48" rx="12" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5" />
+            <text x="24" y="31" font-family="DejaVu Sans Mono, monospace" font-size="18" font-weight="bold" fill="#38bdf8">KEY:</text>
+            <text x="80" y="31" font-family="DejaVu Sans Mono, monospace" font-size="17" font-weight="bold" fill="#facc15">${keyPillText}</text>
+          </g>
+
+          <text x="36" y="235" font-family="DejaVu Sans Mono, monospace" font-size="15" fill="#64748b">AUTONOMOUSLY SYNCED WITH META MUSE SPARK</text>
+        </g>
+
+        <!-- Bottom Dynamic Progress Bar -->
+        <rect x="70" y="${height - 70}" width="${width - 140}" height="8" rx="4" fill="#1e293b" />
+        <rect x="70" y="${height - 70}" width="${((index + 1) / Math.max(1, scene.narrationSegmentIds?.length || 4)) * (width - 140)}" height="8" rx="4" fill="url(#hudGrad)" />
       </svg>
     `;
   }

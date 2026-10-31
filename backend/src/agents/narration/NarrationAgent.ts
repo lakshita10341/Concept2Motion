@@ -1,5 +1,5 @@
 import path from "path";
-import { TTSProvider } from "../providers/tts/EdgeTTSProvider.js";
+import { TTSProvider } from "../../providers/tts/EdgeTTSProvider.js";
 import { TeachingScript } from "../../shared/types/index.js";
 
 export class NarrationAgent {

@@ -1,4 +1,4 @@
-import { LLMProvider } from "../providers/fireworks/FireworksLlamaProvider.js";
+import { LLMProvider } from "../../providers/fireworks/FireworksLlamaProvider.js";
 import {
   CriticReport,
   CriticIssueSchema,
@@ -64,9 +64,9 @@ Storyboard Scenes:
 ${JSON.stringify(storyboard.scenes.map((sc) => ({ id: sc.sceneId, title: sc.title, type: sc.visualType, props: sc.customProps })), null, 2)}
 
 Evaluate:
-1. Technical correctness of the binary search explanation.
-2. Invariants (sorted order, midpoint formula, boundary shifts).
-3. Pedagogical alignment between narration text and storyboard visuals.
+1. Technical correctness of the concepts and mechanisms explained in the script.
+2. Alignment between simulated execution states and storyboard visual representations.
+3. Pedagogical clarity and pacing for the target audience.
 
 Output ONLY valid JSON matching:
 {

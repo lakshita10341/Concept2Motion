@@ -21,7 +21,113 @@ export class SimulationAgent {
     const target = algorithmParams?.target ?? 42;
     const array = algorithmParams?.array ?? [7, 14, 21, 28, 35, 42, 49, 56, 63];
 
-    if (isBloomFilter) {
+    const isConsensus = t.includes("raft") || t.includes("consensus") || t.includes("paxos");
+    const isDNS = t.includes("dns") || t.includes("domain name");
+    const isCache = t.includes("cache") || t.includes("lru") || t.includes("redis");
+
+    if (isConsensus) {
+      pythonScript = `
+import json
+
+def raft_simulation():
+    # 5-node cluster simulation
+    cluster = ["Node_A", "Node_B", "Node_C", "Node_D", "Node_E"]
+    states = [
+        {
+            "step": 1,
+            "description": "Cluster initializes in Follower state with randomized election timeouts (150-300ms)",
+            "stateData": {
+                "term": 1,
+                "leader": None,
+                "nodes": [{"id": n, "role": "Follower", "votes": 0, "logLen": 0} for n in cluster],
+                "action": "ELECTION_TIMEOUT",
+                "quorum": 3
+            }
+        },
+        {
+            "step": 2,
+            "description": "Node A election timer expires -> increments Term to 2, transitions to Candidate, requests votes",
+            "stateData": {
+                "term": 2,
+                "leader": None,
+                "candidate": "Node_A",
+                "nodes": [
+                    {"id": "Node_A", "role": "Candidate", "votes": 3, "logLen": 0},
+                    {"id": "Node_B", "role": "Follower", "votedFor": "Node_A", "logLen": 0},
+                    {"id": "Node_C", "role": "Follower", "votedFor": "Node_A", "logLen": 0},
+                    {"id": "Node_D", "role": "Follower", "votedFor": None, "logLen": 0},
+                    {"id": "Node_E", "role": "Follower", "votedFor": None, "logLen": 0}
+                ],
+                "action": "VOTE_QUORUM_RECEIVED",
+                "quorum": 3
+            }
+        },
+        {
+            "step": 3,
+            "description": "Node A receives majority quorum (3/5 votes) -> Elected Leader for Term 2, sends heartbeats",
+            "stateData": {
+                "term": 2,
+                "leader": "Node_A",
+                "nodes": [
+                    {"id": "Node_A", "role": "Leader", "votes": 3, "logLen": 1},
+                    {"id": "Node_B", "role": "Follower", "logLen": 1},
+                    {"id": "Node_C", "role": "Follower", "logLen": 1},
+                    {"id": "Node_D", "role": "Follower", "logLen": 0},
+                    {"id": "Node_E", "role": "Follower", "logLen": 0}
+                ],
+                "action": "LOG_REPLICATION",
+                "logEntry": {"index": 1, "term": 2, "command": "SET x=42"}
+            }
+        },
+        {
+            "step": 4,
+            "description": "Leader replicates entry to majority (Nodes B & C) -> Commits entry, applies to state machine",
+            "stateData": {
+                "term": 2,
+                "leader": "Node_A",
+                "nodes": [
+                    {"id": "Node_A", "role": "Leader", "committedIndex": 1},
+                    {"id": "Node_B", "role": "Follower", "committedIndex": 1},
+                    {"id": "Node_C", "role": "Follower", "committedIndex": 1},
+                    {"id": "Node_D", "role": "Follower", "committedIndex": 0},
+                    {"id": "Node_E", "role": "Follower", "committedIndex": 0}
+                ],
+                "action": "COMMITTED_MAJORITY",
+                "consensusReached": True
+            }
+        }
+    ]
+    return states
+
+if __name__ == "__main__":
+    print("---OUTPUT_START---")
+    print(json.dumps(raft_simulation()))
+    print("---OUTPUT_END---")
+`;
+      const res = await this.executor.execute(pythonScript, array, target);
+      return { ...res, algorithm: "Raft Consensus" };
+
+    } else if (isDNS) {
+      pythonScript = `
+import json
+
+def dns_simulation():
+    return [
+        {"step": 1, "description": "Browser queries Local DNS Resolver (Cache Miss for example.com)", "stateData": {"level": "Browser -> Resolver", "query": "example.com", "status": "cache_miss"}},
+        {"step": 2, "description": "Resolver queries Root Nameserver ('.') -> returns .com TLD Server IP", "stateData": {"level": "Root Server", "referral": "com.tld"}},
+        {"step": 3, "description": "Resolver queries TLD Server ('.com') -> returns Authoritative NS for example.com", "stateData": {"level": "TLD Nameserver", "authoritativeNS": "ns1.example.com"}},
+        {"step": 4, "description": "Authoritative Nameserver returns IP 93.184.216.34 -> Resolver caches & returns to Client", "stateData": {"level": "Authoritative NS", "ip": "93.184.216.34", "ttl": 300, "resolved": True}}
+    ]
+
+if __name__ == "__main__":
+    print("---OUTPUT_START---")
+    print(json.dumps(dns_simulation()))
+    print("---OUTPUT_END---")
+`;
+      const res = await this.executor.execute(pythonScript, array, target);
+      return { ...res, algorithm: "DNS Resolution" };
+
+    } else if (isBloomFilter) {
       pythonScript = `
 import json
 import hashlib
@@ -202,25 +308,26 @@ if __name__ == "__main__":
       return { ...res, algorithm: "Binary Search" };
 
     } else {
-      // General Protocol / System / Architecture Simulation (e.g. SSL/TLS, DNS, Operating Systems, TCP)
+      // General Dynamic Topic Simulation (System Architecture, Protocols, Operating Systems, Networks)
+      const cleanTopic = topic.replace(/[^a-zA-Z0-9 ]/g, "").trim() || "System Architecture";
       pythonScript = `
 import json
 
-def protocol_trace():
+def system_simulation():
     return [
-        {"step": 1, "description": "Client initial handshake hello", "stateData": {"phase": "ClientHello", "cipherSuites": ["TLS_AES_256_GCM_SHA384"]}},
-        {"step": 2, "description": "Server certificate chain transmission & verification", "stateData": {"phase": "CertificateVerification", "caSigned": True}},
-        {"step": 3, "description": "Key exchange & symmetric session key generation", "stateData": {"phase": "KeyExchange", "encrypted": True}},
-        {"step": 4, "description": "Encrypted secure session established", "stateData": {"phase": "SecureSession", "trafficEncrypted": True}}
+        {"step": 1, "description": "Phase 1: Input initialization & constraint validation", "stateData": {"phase": "Initialization", "target": "${cleanTopic}", "active": True}},
+        {"step": 2, "description": "Phase 2: Core invariant transformation & state progression", "stateData": {"phase": "Transformation", "target": "${cleanTopic}", "active": True}},
+        {"step": 3, "description": "Phase 3: Verification & consistency check", "stateData": {"phase": "Verification", "target": "${cleanTopic}", "active": True}},
+        {"step": 4, "description": "Phase 4: Output completion & deterministic guarantees", "stateData": {"phase": "Completion", "target": "${cleanTopic}", "active": True}}
     ]
 
 if __name__ == "__main__":
     print("---OUTPUT_START---")
-    print(json.dumps(protocol_trace()))
+    print(json.dumps(system_simulation()))
     print("---OUTPUT_END---")
 `;
       const res = await this.executor.execute(pythonScript, array, target);
-      return { ...res, algorithm: "Protocol Handshake" };
+      return { ...res, algorithm: cleanTopic };
     }
   }
 }

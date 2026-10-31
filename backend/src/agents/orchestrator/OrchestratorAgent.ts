@@ -1,9 +1,9 @@
-import { ResearchAgent } from "../agents/research/ResearchAgent.js";
-import { TeachingAgent } from "../agents/teaching/TeachingAgent.js";
-import { SimulationAgent } from "../agents/simulation/SimulationAgent.js";
-import { VisualPlanningAgent } from "../agents/visual-planning/VisualPlanningAgent.js";
-import { NarrationAgent } from "../agents/narration/NarrationAgent.js";
-import { CriticAgent } from "../agents/critic/CriticAgent.js";
+import { ResearchAgent } from "../research/ResearchAgent.js";
+import { TeachingAgent } from "../teaching/TeachingAgent.js";
+import { SimulationAgent } from "../simulation/SimulationAgent.js";
+import { VisualPlanningAgent } from "../visual-planning/VisualPlanningAgent.js";
+import { NarrationAgent } from "../narration/NarrationAgent.js";
+import { CriticAgent } from "../critic/CriticAgent.js";
 import { VideoRendererService } from "../../services/VideoRendererService.js";
 import { JobStore } from "../../services/JobStore.js";
 import { PipelineJob, AgentTraceItem } from "../../shared/types/index.js";
@@ -78,7 +78,7 @@ export class OrchestratorAgent {
 
       // 3. Executable Simulation
       job.status = "simulating";
-      this.addTrace(job, "Simulation Agent", "Executing Code", "Executing sandboxed Python binary search runner to capture state snapshots", "info", "execute_simulation");
+      this.addTrace(job, "Simulation Agent", "Executing Code", `Executing sandboxed Python runner for '${job.request.topic}' to capture state snapshots`, "info", "execute_simulation");
       const simulation = await this.simulationAgent.runSimulation(job.request.topic);
       job.simulation = simulation;
       this.addTrace(job, "Simulation Agent", "States Captured", `Extracted ${simulation.states.length} verified algorithmic execution states`, "success");
