@@ -31,14 +31,20 @@ export class VideoRendererService {
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&apos;");
+      .replace(/"/g, "&#34;")
+      .replace(/'/g, "&#39;");
   }
 
   /**
-   * Generates a 9:16 Vertical Reel format SVG (1080x1920)
+   * Generates a 9:16 Vertical Reel format SVG (1080x1920) with synchronized word highlighting
    */
-  private generateSceneSVG(scene: any, index: number, width = 1080, height = 1920): string {
+  private generateSceneSVG(
+    scene: any,
+    index: number,
+    width = 1080,
+    height = 1920,
+    activeWordIndex = 0
+  ): string {
     const rawTitle = scene.title || "Technical Concept";
     const title = this.escapeXml(rawTitle);
     const props = scene.customProps || {};
@@ -293,7 +299,7 @@ export class VideoRendererService {
       const displayCount = Math.min(4, Math.max(concepts.length, 3));
 
       for (let sIdx = 0; sIdx < displayCount; sIdx++) {
-        const cTitle = this.escapeXml(concepts[sIdx] || `Phase ${sIdx + 1}`);
+        const cTitle = this.escapeXml((concepts[sIdx] || `Phase ${sIdx + 1}`).toUpperCase());
         const cDesc = this.escapeXml((outcomes[sIdx] || "System invariant guaranteed").slice(0, 75));
         const isActive = index === sIdx;
         const isPassed = index > sIdx;
@@ -310,7 +316,7 @@ export class VideoRendererService {
           <!-- Step ${sIdx + 1} Card -->
           <rect x="40" y="${yOffset}" width="840" height="110" rx="20" fill="${cardFill}" stroke="${cardStroke}" stroke-width="${strokeW}" />
           ${isActive ? `<circle cx="64" cy="${yOffset + 55}" r="8" fill="${style.activeStroke}" />` : ""}
-          <text x="${isActive ? 90 : 80}" y="${yOffset + 48}" font-family="DejaVu Sans, Arial" font-size="20" font-weight="bold" fill="${titleColor}">${sIdx + 1}. ${cTitle.toUpperCase()}</text>
+          <text x="${isActive ? 90 : 80}" y="${yOffset + 48}" font-family="DejaVu Sans, Arial" font-size="20" font-weight="bold" fill="${titleColor}">${sIdx + 1}. ${cTitle}</text>
           <text x="${isActive ? 90 : 80}" y="${yOffset + 82}" font-family="DejaVu Sans, Arial" font-size="17" fill="${descColor}">${cDesc}</text>
           ${
             sIdx < displayCount - 1
@@ -333,7 +339,7 @@ export class VideoRendererService {
       ? (index === 0 ? "O(log n) SEARCH HORIZON" : index === 3 ? "DIRECT LOGARITHMIC HIT" : "HALVING SEARCH BOUNDS")
       : this.escapeXml((props.learningOutcome || "SYSTEM INVARIANT").toUpperCase().slice(0, 36));
 
-    return `
+    const svg = `
       <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -375,33 +381,33 @@ export class VideoRendererService {
           ${centerVisualSvg}
         </g>
 
-        <!-- Lower 1/3 Safe Zone: Anti-AI Takeaway Card (Clean, Grounded, High Contrast) -->
-        <g transform="translate(70, ${height - 400})">
+        <!-- Upper 2/3 Architectural Canvas: Invariant Takeaway Card -->
+        <g transform="translate(70, 980)">
           <!-- Card Backdrop -->
-          <rect width="${width - 140}" height="280" rx="16" fill="#0c0e14" stroke="#1f2430" stroke-width="1.5" />
+          <rect width="${width - 140}" height="150" rx="14" fill="#0c0e14" stroke="#1f2430" stroke-width="1.5" />
           
           <!-- Key Invariant Badge -->
-          <rect x="36" y="26" width="130" height="28" rx="6" fill="#10b981" />
-          <text x="101" y="45" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#042f2e" text-anchor="middle" letter-spacing="1">TAKEAWAY</text>
+          <rect x="28" y="20" width="130" height="26" rx="5" fill="#10b981" />
+          <text x="93" y="38" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#042f2e" text-anchor="middle" letter-spacing="1">TAKEAWAY</text>
 
           <!-- Core Mechanical Insight -->
-          <text x="36" y="100" font-family="DejaVu Sans, Arial" font-size="28" font-weight="700" fill="#ffffff">${explanation}</text>
-
-          <!-- Architectural Invariant Pill -->
-          <g transform="translate(36, 140)">
-            <rect width="${Math.min(width - 212, 620)}" height="46" rx="8" fill="#141824" stroke="#2d3748" stroke-width="1.5" />
-            <text x="20" y="30" font-family="DejaVu Sans Mono, monospace" font-size="16" font-weight="bold" fill="#38bdf8">INVARIANT:</text>
-            <text x="135" y="30" font-family="DejaVu Sans Mono, monospace" font-size="16" font-weight="bold" fill="#facc15">${keyPillText}</text>
-          </g>
-
-          <text x="36" y="235" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#64748b">VERIFIED AGAINST SYSTEM SIMULATION INVARIANTS</text>
+          <text x="28" y="78" font-family="DejaVu Sans, Arial" font-size="24" font-weight="700" fill="#ffffff">${explanation.slice(0, 60)}</text>
+          
+          <rect x="28" y="98" width="${Math.min(width - 196, 600)}" height="34" rx="6" fill="#141824" stroke="#2d3748" stroke-width="1" />
+          <text x="44" y="120" font-family="DejaVu Sans Mono, monospace" font-size="14" font-weight="bold" fill="#38bdf8">INVARIANT:</text>
+          <text x="145" y="120" font-family="DejaVu Sans Mono, monospace" font-size="14" font-weight="bold" fill="#facc15">${keyPillText}</text>
         </g>
 
-        <!-- Solid High-Contrast Progress Bar (Single Emerald Accent, No Rainbow Gradient) -->
-        <rect x="70" y="${height - 70}" width="${width - 140}" height="6" rx="3" fill="#1f2430" />
-        <rect x="70" y="${height - 70}" width="${((index + 1) / Math.max(1, scene.narrationSegmentIds?.length || 4)) * (width - 140)}" height="6" rx="3" fill="#10b981" />
+        <!-- Lower 1/3 Safe Zone: (y >= 1150) intentionally pitch black and clean for Character Avatar & Karaoke Captions -->
       </svg>
     `;
+
+    return svg
+      .replace(/&APOS;/gi, "&#39;")
+      .replace(/&QUOT;/gi, "&#34;")
+      .replace(/&AMP;/gi, "&amp;")
+      .replace(/&LT;/gi, "&lt;")
+      .replace(/&GT;/gi, "&gt;");
   }
 
   async renderFinalVideo(
@@ -409,20 +415,85 @@ export class VideoRendererService {
     script: TeachingScript,
     jobDir: string
   ): Promise<string> {
-    const videoOutPath = path.join(jobDir, "final_video.mp4");
+    const rawVideoOutPath = path.join(jobDir, "raw_scenes.mp4");
+    const fullAudioOutPath = path.join(jobDir, "full_narration.mp3");
+    const finalVideoOutPath = path.join(jobDir, "final_video.mp4");
     const sceneVideoPaths: string[] = [];
 
     // Vertical 9:16 standard Reel resolution (1080 x 1920)
     const reelWidth = 1080;
     const reelHeight = 1920;
 
+    // 1. Generate full unified narration audio and continuous captions.json
+    let continuousCurrentSec = 0.0;
+    const unifiedSegments = [];
+    const audioConcatListPath = path.join(jobDir, "audio_concat.txt");
+    let audioConcatContent = "";
+
+    for (let i = 0; i < script.segments.length; i++) {
+      const seg = script.segments[i];
+      const segAudioPath = path.join(jobDir, `${seg.segmentId}.mp3`);
+      const segDur = Math.max(2.5, seg.audioDurationSeconds || 4.0);
+      const segStartSec = continuousCurrentSec;
+      const segEndSec = segStartSec + segDur;
+
+      if (fs.existsSync(segAudioPath)) {
+        audioConcatContent += `file '${path.resolve(segAudioPath)}'\n`;
+      }
+
+      const words = (seg.wordTimings || []).map((wt) => {
+        const wStart = segStartSec + wt.startMs / 1000.0;
+        const wEnd = segStartSec + wt.endMs / 1000.0;
+        return {
+          word: wt.word,
+          start: Math.round(wStart * 100) / 100,
+          end: Math.round(wEnd * 100) / 100,
+        };
+      });
+
+      unifiedSegments.push({
+        id: i,
+        start: Math.round(segStartSec * 100) / 100,
+        end: Math.round(segEndSec * 100) / 100,
+        text: seg.narrationText,
+        words,
+      });
+
+      continuousCurrentSec = segEndSec;
+    }
+
+    const unifiedCaptions = {
+      duration: Math.round(continuousCurrentSec * 100) / 100,
+      segments: unifiedSegments,
+    };
+    const captionsJsonPath = path.join(jobDir, "captions.json");
+    fs.writeFileSync(captionsJsonPath, JSON.stringify(unifiedCaptions, null, 2), "utf-8");
+    fs.writeFileSync(audioConcatListPath, audioConcatContent, "utf-8");
+
+    // Concatenate full narration audio
+    await new Promise<void>((resolve, reject) => {
+      const proc = spawn(this.ffmpegPath, [
+        "-y",
+        "-f", "concat",
+        "-safe", "0",
+        "-i", audioConcatListPath,
+        "-c", "copy",
+        fullAudioOutPath,
+      ]);
+      proc.on("close", (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`Failed to concatenate audio tracks`));
+      });
+    });
+
+    // 2. Render timed scenes
     for (let i = 0; i < storyboard.scenes.length; i++) {
       const scene = storyboard.scenes[i];
       const segment = script.segments[i];
-      const audioPath = path.join(jobDir, `${segment.segmentId}.mp3`);
       const svgPath = path.join(jobDir, `scene_${i + 1}.svg`);
       const pngPath = path.join(jobDir, `scene_${i + 1}.png`);
       const sceneVideoPath = path.join(jobDir, `scene_${i + 1}.mp4`);
+      const duration = Math.max(2.5, segment.audioDurationSeconds || scene.durationSeconds || 4.0);
 
       const svgContent = this.generateSceneSVG(scene, i, reelWidth, reelHeight);
       fs.writeFileSync(svgPath, svgContent, "utf-8");
@@ -434,82 +505,164 @@ export class VideoRendererService {
           defaultFontFamily: "DejaVu Sans",
         },
       });
-      const pngData = resvg.render();
-      fs.writeFileSync(pngPath, pngData.asPng());
-
-      const duration = Math.max(3, segment.audioDurationSeconds || scene.durationSeconds || 5);
+      fs.writeFileSync(pngPath, resvg.render().asPng());
 
       await new Promise<void>((resolve, reject) => {
-        let args: string[] = [];
-
-        if (fs.existsSync(audioPath) && fs.statSync(audioPath).size > 100) {
-          args = [
-            "-y",
-            "-loop", "1",
-            "-i", pngPath,
-            "-i", audioPath,
-            "-c:v", "libx264",
-            "-tune", "stillimage",
-            "-c:a", "aac",
-            "-b:a", "192k",
-            "-vf", `scale=${reelWidth}:${reelHeight}`,
-            "-pix_fmt", "yuv420p",
-            "-shortest",
-            sceneVideoPath,
-          ];
-        } else {
-          args = [
-            "-y",
-            "-loop", "1",
-            "-i", pngPath,
-            "-f", "lavfi",
-            "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
-            "-t", `${duration}`,
-            "-c:v", "libx264",
-            "-tune", "stillimage",
-            "-c:a", "aac",
-            "-vf", `scale=${reelWidth}:${reelHeight}`,
-            "-pix_fmt", "yuv420p",
-            sceneVideoPath,
-          ];
-        }
-
-        const proc = spawn(this.ffmpegPath, args);
-        let errLog = "";
-        proc.stderr.on("data", (d) => (errLog += d.toString()));
+        const proc = spawn(this.ffmpegPath, [
+          "-y",
+          "-loop", "1",
+          "-i", pngPath,
+          "-t", `${duration}`,
+          "-c:v", "libx264",
+          "-tune", "stillimage",
+          "-vf", `scale=${reelWidth}:${reelHeight}`,
+          "-pix_fmt", "yuv420p",
+          sceneVideoPath,
+        ]);
         proc.on("close", (code) => {
           if (code === 0) {
             sceneVideoPaths.push(sceneVideoPath);
             resolve();
           } else {
-            reject(new Error(`Scene render error for scene ${i + 1}: ${errLog}`));
+            reject(new Error(`Scene ${i + 1} render failed`));
           }
         });
       });
     }
 
-    const concatListPath = path.join(jobDir, "concat_list.txt");
-    const concatContent = sceneVideoPaths.map((p) => `file '${path.resolve(p)}'`).join("\n");
-    fs.writeFileSync(concatListPath, concatContent, "utf-8");
+    // 3. Concatenate scene clips
+    const sceneConcatListPath = path.join(jobDir, "scene_concat.txt");
+    const sceneConcatContent = sceneVideoPaths.map((p) => `file '${path.resolve(p)}'`).join("\n");
+    fs.writeFileSync(sceneConcatListPath, sceneConcatContent, "utf-8");
 
     await new Promise<void>((resolve, reject) => {
       const proc = spawn(this.ffmpegPath, [
         "-y",
         "-f", "concat",
         "-safe", "0",
-        "-i", concatListPath,
+        "-i", sceneConcatListPath,
         "-c", "copy",
-        videoOutPath,
+        rawVideoOutPath,
       ]);
+      proc.on("close", (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`Scene video concatenation failed`));
+      });
+    });
 
+    // 4. Generate high-retention karaoke caption timeline via caption_overlay
+    const captionsDir = path.join(jobDir, "captions");
+    const assetPath = path.resolve(process.cwd(), "assets/asset.png");
+    let captionConcatFile: string | null = null;
+    let captionY = 1161;
+
+    try {
+      const pyScript = path.resolve(process.cwd(), "scripts/render_captions.py");
+      const pyProc = spawn("python3", [pyScript, captionsJsonPath, captionsDir, assetPath]);
+      let pyOutput = "";
+      pyProc.stdout.on("data", (d) => (pyOutput += d.toString()));
+      pyProc.stderr.on("data", (d) => console.warn(`[caption_overlay] ${d.toString()}`));
+
+      await new Promise<void>((resolve) => {
+        pyProc.on("close", (code) => {
+          if (code === 0 && pyOutput.includes("---CAPTION_OUTPUT_START---")) {
+            const rawJson = pyOutput
+              .split("---CAPTION_OUTPUT_START---")[1]
+              .split("---CAPTION_OUTPUT_END---")[0]
+              .trim();
+            const parsed = JSON.parse(rawJson);
+            captionConcatFile = parsed.concatFile;
+            captionY = parsed.captionY || 1161;
+          }
+          resolve();
+        });
+      });
+    } catch (err: any) {
+      console.warn("[VideoRenderer] caption_overlay failed, proceeding without external caption overlay:", err.message);
+    }
+
+    // 5. Final multi-track compilation with Asset Avatar, Karaoke Captions, and 1.2x Pacing Acceleration
+    await new Promise<void>((resolve, reject) => {
+      const inputs = ["-y", "-i", rawVideoOutPath, "-i", fullAudioOutPath];
+      let nextInputIdx = 2;
+      let assetInputIdx = -1;
+      let captionInputIdx = -1;
+
+      const hasAsset = fs.existsSync(assetPath);
+      if (hasAsset) {
+        inputs.push("-i", assetPath);
+        assetInputIdx = nextInputIdx++;
+      }
+
+      if (captionConcatFile && fs.existsSync(captionConcatFile)) {
+        inputs.push("-f", "concat", "-safe", "0", "-i", captionConcatFile);
+        captionInputIdx = nextInputIdx++;
+      }
+
+      const filters: string[] = [];
+      let curV = "[0:v]";
+
+      if (hasAsset && assetInputIdx !== -1) {
+        // Asset width: 45% of frame (approx 486px)
+        filters.push(`[${assetInputIdx}:v]scale=486:-2[scaled_asset]`);
+        filters.push(`${curV}[scaled_asset]overlay=x=main_w*0.048:y=main_h-overlay_h-(main_h*-0.016)[v_asset]`);
+        curV = "[v_asset]";
+      }
+
+      if (captionInputIdx !== -1) {
+        filters.push(`${curV}[${captionInputIdx}:v]overlay=x=0:y=${captionY}[v_cap]`);
+        curV = "[v_cap]";
+      }
+
+      // High-retention 1.2x pacing speedup
+      filters.push(`${curV}setpts=PTS/1.2[v_final]`);
+      filters.push(`[1:a]atempo=1.2[a_final]`);
+
+      const ffmpegArgs = [
+        ...inputs,
+        "-filter_complex", filters.join(";"),
+        "-map", "[v_final]",
+        "-map", "[a_final]",
+        "-c:v", "libx264",
+        "-preset", "fast",
+        "-crf", "20",
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac",
+        "-b:a", "192k",
+        "-shortest",
+        finalVideoOutPath,
+      ];
+
+      const proc = spawn(this.ffmpegPath, ffmpegArgs);
       let errLog = "";
       proc.stderr.on("data", (d) => (errLog += d.toString()));
       proc.on("close", (code) => {
         if (code === 0) resolve();
-        else reject(new Error(`Final video concatenation failed: ${errLog}`));
+        else {
+          console.warn(`Multi-track composite failed (${code}): ${errLog}. Falling back to simple merge.`);
+          // Simple fallback
+          const fallbackProc = spawn(this.ffmpegPath, [
+            "-y",
+            "-i", rawVideoOutPath,
+            "-i", fullAudioOutPath,
+            "-filter_complex", "[0:v]setpts=PTS/1.2[v];[1:a]atempo=1.2[a]",
+            "-map", "[v]",
+            "-map", "[a]",
+            "-c:v", "libx264",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-shortest",
+            finalVideoOutPath,
+          ]);
+          fallbackProc.on("close", (c) => {
+            if (c === 0) resolve();
+            else reject(new Error(`Fallback video render failed: ${errLog}`));
+          });
+        }
       });
     });
 
-    return videoOutPath;
+    return finalVideoOutPath;
   }
 }

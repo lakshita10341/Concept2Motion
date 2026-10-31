@@ -113,6 +113,10 @@ export class VisualPlanningAgent {
         };
       }
 
+      // Attach speech word-level timestamps to customProps for frame synchronization
+      customProps.wordTimings = seg.wordTimings || [];
+      customProps.narrationText = seg.narrationText;
+
       scenes.push({
         sceneId,
         title: seg.concept,

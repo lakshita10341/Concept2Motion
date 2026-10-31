@@ -1,61 +1,82 @@
 import { spawn } from "child_process";
 import fs from "fs";
 import path from "path";
+import { WordTiming } from "../../shared/types/index.js";
 
 export interface TTSProvider {
   name: string;
-  synthesizeSpeech(text: string, outputPath: string, voice?: string): Promise<{ audioDurationSeconds: number }>;
+  synthesizeSpeech(
+    text: string,
+    outputPath: string,
+    voice?: string
+  ): Promise<{ audioDurationSeconds: number; wordTimings?: WordTiming[] }>;
 }
 
 export class EdgeTTSProvider implements TTSProvider {
   name = "edge-tts";
 
-  async synthesizeSpeech(text: string, outputPath: string, voice = "en-US-GuyNeural"): Promise<{ audioDurationSeconds: number }> {
+  async synthesizeSpeech(
+    text: string,
+    outputPath: string,
+    voice = "en-US-GuyNeural"
+  ): Promise<{ audioDurationSeconds: number; wordTimings?: WordTiming[] }> {
     const parentDir = path.dirname(outputPath);
     if (!fs.existsSync(parentDir)) {
       fs.mkdirSync(parentDir, { recursive: true });
     }
 
-    // Try edge-tts from .venv, ~/.local/bin, or system PATH
-    const pythonBin = path.resolve(process.cwd(), ".venv/bin/python");
-    const edgeTtsBin = path.resolve(process.cwd(), ".venv/bin/edge-tts");
-    const userEdgeTts = path.resolve(process.env.HOME || "", ".local/bin/edge-tts");
-
-    let cmd = "edge-tts";
-    if (fs.existsSync(edgeTtsBin)) {
-      cmd = edgeTtsBin;
-    } else if (fs.existsSync(userEdgeTts)) {
-      cmd = userEdgeTts;
-    }
+    const scriptPath = path.resolve(process.cwd(), "scripts/synthesize_with_words.py");
+    const backendScriptPath = path.resolve(process.cwd(), "backend/scripts/synthesize_with_words.py");
+    const activeScript = fs.existsSync(scriptPath) ? scriptPath : backendScriptPath;
 
     return new Promise((resolve, reject) => {
-      // Clean text of characters that might disrupt TTS
       const cleanText = text.replace(/[*_#`]/g, "").trim();
-      const proc = spawn(cmd, ["--voice", voice, "--text", cleanText, "--write-media", outputPath]);
+      const pythonProc = spawn("python3", [activeScript, cleanText, voice, outputPath]);
 
+      let stdout = "";
       let stderr = "";
-      proc.stderr.on("data", (d) => {
+
+      pythonProc.stdout.on("data", (d) => {
+        stdout += d.toString();
+      });
+
+      pythonProc.stderr.on("data", (d) => {
         stderr += d.toString();
       });
 
-      proc.on("close", (code) => {
-        if (code !== 0) {
-          return reject(new Error(`edge-tts failed with code ${code}: ${stderr}`));
+      pythonProc.on("close", (code) => {
+        if (code === 0 && stdout.includes("---OUTPUT_START---")) {
+          try {
+            const raw = stdout.split("---OUTPUT_START---")[1].split("---OUTPUT_END---")[0].trim();
+            const parsed = JSON.parse(raw);
+            return resolve({
+              audioDurationSeconds: parsed.audioDurationSeconds || 4.0,
+              wordTimings: parsed.wordTimings || [],
+            });
+          } catch (e) {
+            // fallback
+          }
         }
 
-        // Compute duration using file size or fallback estimation (~150 words per minute => ~2.5 words per sec)
-        const wordCount = cleanText.split(/\s+/).length;
-        const estimatedDuration = Math.max(2.5, +(wordCount / 2.6).toFixed(2));
+        // Fallback if python script had an issue
+        const words = cleanText.split(/\s+/).filter(Boolean);
+        const estDuration = Math.max(2.5, +(words.length / 2.5).toFixed(2));
+        const estTimings: WordTiming[] = [];
+        let cur = 100.0;
+        const perWord = (estDuration * 1000) / Math.max(1, words.length);
+        for (const w of words) {
+          estTimings.push({ word: w, startMs: cur, endMs: cur + perWord });
+          cur += perWord;
+        }
 
-        resolve({ audioDurationSeconds: estimatedDuration });
+        resolve({ audioDurationSeconds: estDuration, wordTimings: estTimings });
       });
 
-      proc.on("error", (err) => {
-        // Fallback simulation if binary unavailable
-        const wordCount = cleanText.split(/\s+/).length;
-        const estimatedDuration = Math.max(2.5, +(wordCount / 2.6).toFixed(2));
-        fs.writeFileSync(outputPath, "AUDIO_MOCK_DATA");
-        resolve({ audioDurationSeconds: estimatedDuration });
+      pythonProc.on("error", () => {
+        const words = cleanText.split(/\s+/).filter(Boolean);
+        const estDuration = Math.max(2.5, +(words.length / 2.5).toFixed(2));
+        fs.writeFileSync(outputPath, "AUDIO_MOCK");
+        resolve({ audioDurationSeconds: estDuration, wordTimings: [] });
       });
     });
   }

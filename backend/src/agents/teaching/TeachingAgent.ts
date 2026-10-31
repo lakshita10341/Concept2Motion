@@ -14,33 +14,36 @@ export class TeachingAgent {
     const numSegments = targetDuration <= 45 ? 3 : targetDuration <= 60 ? 4 : 5;
     const wordsPerSegment = Math.round(totalWordsBudget / numSegments);
 
-    const prompt = `You are a Principal Systems Architect and Award-Winning STEM Reel Scriptwriter.
-Transform the following research into a high-retention, technically rigorous 9:16 vertical engineering reel script in standard English.
+    const prompt = `You are a Principal Systems Architect and Award-Winning Engineering Reel Scriptwriter following the Technical Engineering Reels standard.
+Transform the research into a high-retention, technically rigorous 9:16 vertical engineering reel script.
 
-FOLLOW THE GOLD-STANDARD TECHNICAL REEL FRAMEWORK:
-1. THE HOOK (Opening Segment):
-   - Start immediately with a concrete real-life scenario the viewer has experienced (e.g., checking a username, loading a webpage, querying a massive database).
-   - State the impossible engineering challenge hiding inside it with concrete numbers (e.g., searching one billion items in under one millisecond).
-   - Reveal the core concept as the mechanism that makes it possible.
+STRUCTURE REQUIREMENTS:
+1. THE HOOK (Mandatory Opening):
+   - Line 1: A concrete real-life situation the viewer has personally experienced (e.g., typing a username, checkout on Black Friday, a database lock, a video buffering).
+   - Line 2: The engineering problem hiding inside it, with a number that makes it feel impossible (e.g., checking one billion items under one millisecond).
+   - Line 3: Names the concept as the mechanism that solves it.
+   - NEVER open with a definition, history lesson, or "Have you ever wondered".
 
-2. WORKED MECHANICAL EXAMPLE (Middle Segments):
-   - Walk through ONE concrete mechanism step-by-step with real values (e.g. pointers, bit positions, hash outputs, packet headers).
-   - Include a pattern interrupt and one counterintuitive insight where common assumptions break.
-   - Voice a real-world edge case or failure mode (e.g. hash collisions, network partition, worst-case bounds).
+2. ENGAGEMENT & ONE WORKED EXAMPLE (Middle Segments):
+   - Re-hook around the 30-second mark with a direct question (e.g., "So here is the real question: how does the replica survive the crash?").
+   - Include a pattern interrupt every 10 to 15 seconds.
+   - One counterintuitive moment where the obvious assumption breaks.
+   - One objection beat voicing the viewer's skepticism (e.g., "Why not just do both?").
+   - ONE worked example with concrete numbers (e.g., two nodes, four partitions, 64-byte chunks, a 16-bit ring) that runs start to finish on the same data.
+   - A failure mode that escalates in real production conditions.
 
 3. LOCKED ENDING (Final Segment):
    - State the fundamental engineering trade-off.
-   - Make a callback to the opening real-life scenario.
-   - Deliver a crisp punchline and permanent mental model for senior engineers.
+   - Mandatory callback closing the loop on the opening hook scenario.
+   - Crisp 3-sentence conclusion that leaves a permanent mental model, followed by a punchline.
 
-4. ANTI-AI-SLOP VOICE RULES (MANDATORY):
-   - HARD BAN on AI-generated cliché words: NEVER use "delve", "tapestry", "harness", "supercharge", "seamless", "revolutionize", "game-changer", "testament", "in today's world", "unleash", "elevate".
-   - NO AI generic filler: Do NOT start with "Have you ever wondered" or "Imagine if you will". Start directly with the physical operation or developer event.
-   - Tone: Senior systems architect in an incident review or whiteboard design session. Direct, grounded, technically precise, zero marketing fluff.
-   - Target total video duration: ~${targetDuration} seconds.
-   - Total word count: ~${totalWordsBudget} words across exactly ${numSegments} segments (~${wordsPerSegment} words per segment).
-   - Write phonetically for speech synthesis: write "O of log n" instead of "O(log n)", "dee en ess" instead of "DNS", "one millisecond" instead of "1ms".
-   - Standard English only. No emojis, no markdown inside narration text, no stage directions.
+4. NARRATOR STYLE (CRITICAL):
+   - Conversational, punchy cadence: short, punchy lines landing one at a time.
+   - Casual spoken connectors: "Now", "So", "Here is the catch", "Here is what happens next".
+   - Plain verbs (flip, skip, scan, hit, miss, pay) wrapped around exact technical nouns.
+   - ZERO visual or screen references: NEVER use "picture", "imagine", "look at", "see", "watch", "notice", "observe", or "as you can see". The narration is pure spoken audio.
+   - Write phonetically for speech synthesis: write "O of log n" instead of "O(log n)", "kilo-bytes" instead of "KB", "dee-en-ess" instead of "DNS", "one millisecond" instead of "1ms".
+   - Target total video duration: ~${targetDuration} seconds (~${totalWordsBudget} total words across ${numSegments} segments, ~${wordsPerSegment} words per segment).
 
 Topic: ${research.topic}
 Audience Level: ${audienceLevel}

@@ -28,6 +28,14 @@ export const ResearchNotesSchema = z.object({
 
 export type ResearchNotes = z.infer<typeof ResearchNotesSchema>;
 
+export const WordTimingSchema = z.object({
+  word: z.string(),
+  startMs: z.number(),
+  endMs: z.number(),
+});
+
+export type WordTiming = z.infer<typeof WordTimingSchema>;
+
 export const NarrationSegmentSchema = z.object({
   segmentId: z.string(),
   narrationText: z.string(),
@@ -35,6 +43,7 @@ export const NarrationSegmentSchema = z.object({
   learningOutcome: z.string(),
   audioUrl: z.string().optional(),
   audioDurationSeconds: z.number().optional(),
+  wordTimings: z.array(WordTimingSchema).optional(),
 });
 
 export type NarrationSegment = z.infer<typeof NarrationSegmentSchema>;
