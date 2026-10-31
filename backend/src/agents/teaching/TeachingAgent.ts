@@ -33,7 +33,10 @@ FOLLOW THE GOLD-STANDARD TECHNICAL REEL FRAMEWORK:
    - Make a callback to the opening real-life scenario.
    - Deliver a crisp punchline and permanent mental model for senior engineers.
 
-4. SPOKEN DELIVERY & CONSTRAINTS:
+4. ANTI-AI-SLOP VOICE RULES (MANDATORY):
+   - HARD BAN on AI-generated cliché words: NEVER use "delve", "tapestry", "harness", "supercharge", "seamless", "revolutionize", "game-changer", "testament", "in today's world", "unleash", "elevate".
+   - NO AI generic filler: Do NOT start with "Have you ever wondered" or "Imagine if you will". Start directly with the physical operation or developer event.
+   - Tone: Senior systems architect in an incident review or whiteboard design session. Direct, grounded, technically precise, zero marketing fluff.
    - Target total video duration: ~${targetDuration} seconds.
    - Total word count: ~${totalWordsBudget} words across exactly ${numSegments} segments (~${wordsPerSegment} words per segment).
    - Write phonetically for speech synthesis: write "O of log n" instead of "O(log n)", "dee en ess" instead of "DNS", "one millisecond" instead of "1ms".
@@ -69,6 +72,8 @@ Output ONLY valid JSON matching this schema:
         ],
         { jsonMode: true, temperature: 0.2 }
       );
+
+      console.log(`[TeachingAgent] Raw LLM response received (${response.length} chars). Preview:`, response.slice(0, 80));
 
       let cleaned = response.trim();
       // Remove markdown code fences if present
@@ -125,11 +130,11 @@ Output ONLY valid JSON matching this schema:
         let narration = "";
 
         if (i === 0) {
-          narration = `Imagine dealing with high-scale production systems where ${research.topic} is critical. How do systems guarantee consistency under massive load? That is the fundamental problem of ${research.topic}.`;
+          narration = `Under production load, ${research.topic} must maintain strict consistency across state transitions. Without deterministic invariants, concurrent updates corrupt records instantly.`;
         } else if (i === segCount - 1) {
-          narration = `That is ${research.topic}: reliable, deterministic, and built for modern scale. You never remove the trade-off, you only choose which constraints your architecture will guarantee.`;
+          narration = `In production, ${research.topic} trades raw throughput for absolute state correctness. You cannot eliminate the physical constraint, you only pick which guarantee your system preserves.`;
         } else {
-          narration = `Here is the core mechanism: ${stepDetail}. Every node in the architecture deterministically tracks state invariants to prevent failure.`;
+          narration = `The execution path is straightforward: ${stepDetail}. Every node validates local state before committing to avoid split-brain or stale reads.`;
         }
 
         fallbackSegments.push({

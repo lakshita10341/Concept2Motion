@@ -337,77 +337,69 @@ export class VideoRendererService {
       <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#07090e" />
-            <stop offset="40%" stop-color="#0b101c" />
-            <stop offset="100%" stop-color="#05070c" />
-          </linearGradient>
-          <linearGradient id="hudGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#06b6d4" />
-            <stop offset="50%" stop-color="#3b82f6" />
-            <stop offset="100%" stop-color="#8b5cf6" />
-          </linearGradient>
-          <linearGradient id="pillGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#10b981" />
-            <stop offset="100%" stop-color="#06b6d4" />
+            <stop offset="0%" stop-color="#090a0f" />
+            <stop offset="100%" stop-color="#050608" />
           </linearGradient>
         </defs>
 
-        <!-- Vertical 9:16 Canvas (#07090E Modern Dark Slate) -->
+        <!-- Precision Matte Canvas (#090A0F Engineering Slate) -->
         <rect width="${width}" height="${height}" fill="url(#bg)" />
 
-        <!-- Subtle Engineering Grid Lines (Upper 2/3) -->
-        <line x1="70" y1="200" x2="${width - 70}" y2="200" stroke="#1e293b" stroke-width="1" stroke-dasharray="8 8" />
-        <line x1="70" y1="1300" x2="${width - 70}" y2="1300" stroke="#1e293b" stroke-width="1" stroke-dasharray="8 8" />
+        <!-- Clean Structural Hairline Dividers -->
+        <line x1="70" y1="200" x2="${width - 70}" y2="200" stroke="#1f2430" stroke-width="1.5" />
+        <line x1="70" y1="1340" x2="${width - 70}" y2="1340" stroke="#1f2430" stroke-width="1.5" stroke-dasharray="6 6" />
 
-        <!-- Top Engineering HUD (Telemetric Status) -->
-        <rect x="70" y="80" width="${width - 140}" height="4" rx="2" fill="url(#hudGrad)" />
+        <!-- Top Engineering Status Strip (Anti-Slop: Monolithic Accent & Concrete Telemetry) -->
+        <rect x="70" y="80" width="${width - 140}" height="3" fill="#10b981" />
         <g transform="translate(70, 105)">
-          <rect width="210" height="32" rx="8" fill="#0f172a" stroke="#334155" stroke-width="1.5" />
-          <circle cx="16" cy="16" r="5" fill="#10b981" />
-          <text x="32" y="22" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#38bdf8" letter-spacing="1">C2M • REEL V2</text>
+          <!-- Telemetry Tag 1 -->
+          <rect width="180" height="34" rx="6" fill="#11141c" stroke="#242b3b" stroke-width="1" />
+          <circle cx="16" cy="17" r="4" fill="#10b981" />
+          <text x="30" y="23" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#f8fafc" letter-spacing="1">SYSTEM: REEL</text>
 
-          <rect x="225" width="240" height="32" rx="8" fill="#0f172a" stroke="#334155" stroke-width="1.5" />
-          <text x="240" y="22" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#a5b4fc" letter-spacing="1">${badgeText}</text>
+          <!-- Telemetry Tag 2 -->
+          <rect x="195" width="280" height="34" rx="6" fill="#11141c" stroke="#242b3b" stroke-width="1" />
+          <text x="210" y="23" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#38bdf8" letter-spacing="0.5">${badgeText}</text>
 
-          <rect x="${width - 140 - 150}" width="150" height="32" rx="8" fill="#0f172a" stroke="#334155" stroke-width="1.5" />
-          <text x="${width - 140 - 75}" y="22" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#94a3b8" text-anchor="middle">BEAT ${index + 1} / 4</text>
+          <!-- Telemetry Tag 3 -->
+          <rect x="${width - 140 - 150}" width="150" height="34" rx="6" fill="#11141c" stroke="#242b3b" stroke-width="1" />
+          <text x="${width - 140 - 75}" y="23" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#94a3b8" text-anchor="middle">STAGE ${index + 1} / 4</text>
         </g>
 
-        <!-- Main Title & Topic Header -->
+        <!-- High-Contrast Title & Subtitle (No gradient text) -->
         <text x="70" y="200" font-family="DejaVu Sans, Arial" font-size="44" font-weight="800" fill="#f8fafc">${title}</text>
-        <text x="70" y="238" font-family="DejaVu Sans Mono, monospace" font-size="18" font-weight="600" fill="#64748b" letter-spacing="1.5">HARDWARE-TIMED COGNITIVE VISUALS</text>
+        <text x="70" y="236" font-family="DejaVu Sans Mono, monospace" font-size="16" font-weight="600" fill="#64748b" letter-spacing="1">PRODUCTION ARCHITECTURE SPECIFICATION</text>
 
-        <!-- Center Visual Active Canvas (Upper 2/3: y in 250 to 1350) -->
+        <!-- Center Visual Active Canvas (Upper 2/3: y in 260 to 1320) -->
         <g transform="translate(0, 0)">
           ${centerVisualSvg}
         </g>
 
-        <!-- Lower 1/3 Safe Zone: High-Retention Reel Karaoke Subtitle Card -->
+        <!-- Lower 1/3 Safe Zone: Anti-AI Takeaway Card (Clean, Grounded, High Contrast) -->
         <g transform="translate(70, ${height - 400})">
-          <!-- Card Backdrop with glowing border -->
-          <rect width="${width - 140}" height="280" rx="24" fill="#0c101d" stroke="#1e293b" stroke-width="2" />
+          <!-- Card Backdrop -->
+          <rect width="${width - 140}" height="280" rx="16" fill="#0c0e14" stroke="#1f2430" stroke-width="1.5" />
           
-          <!-- Live Telemetry Pill -->
-          <rect x="36" y="28" width="180" height="30" rx="8" fill="#047857" />
-          <circle cx="52" cy="43" r="4" fill="#6ee7b7" />
-          <text x="66" y="49" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#ffffff" letter-spacing="1">TAKEAWAY BEAT</text>
+          <!-- Key Invariant Badge -->
+          <rect x="36" y="26" width="130" height="28" rx="6" fill="#10b981" />
+          <text x="101" y="45" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#042f2e" text-anchor="middle" letter-spacing="1">TAKEAWAY</text>
 
           <!-- Core Mechanical Insight -->
-          <text x="36" y="105" font-family="DejaVu Sans, Arial" font-size="28" font-weight="700" fill="#ffffff">${explanation}</text>
+          <text x="36" y="100" font-family="DejaVu Sans, Arial" font-size="28" font-weight="700" fill="#ffffff">${explanation}</text>
 
-          <!-- High-Retention Karaoke Pill Badge -->
+          <!-- Architectural Invariant Pill -->
           <g transform="translate(36, 140)">
-            <rect width="${Math.min(width - 212, 600)}" height="48" rx="12" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5" />
-            <text x="24" y="31" font-family="DejaVu Sans Mono, monospace" font-size="18" font-weight="bold" fill="#38bdf8">KEY:</text>
-            <text x="80" y="31" font-family="DejaVu Sans Mono, monospace" font-size="17" font-weight="bold" fill="#facc15">${keyPillText}</text>
+            <rect width="${Math.min(width - 212, 620)}" height="46" rx="8" fill="#141824" stroke="#2d3748" stroke-width="1.5" />
+            <text x="20" y="30" font-family="DejaVu Sans Mono, monospace" font-size="16" font-weight="bold" fill="#38bdf8">INVARIANT:</text>
+            <text x="135" y="30" font-family="DejaVu Sans Mono, monospace" font-size="16" font-weight="bold" fill="#facc15">${keyPillText}</text>
           </g>
 
-          <text x="36" y="235" font-family="DejaVu Sans Mono, monospace" font-size="15" fill="#64748b">AUTONOMOUSLY SYNCED WITH META MUSE SPARK</text>
+          <text x="36" y="235" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#64748b">VERIFIED AGAINST SYSTEM SIMULATION INVARIANTS</text>
         </g>
 
-        <!-- Bottom Dynamic Progress Bar -->
-        <rect x="70" y="${height - 70}" width="${width - 140}" height="8" rx="4" fill="#1e293b" />
-        <rect x="70" y="${height - 70}" width="${((index + 1) / Math.max(1, scene.narrationSegmentIds?.length || 4)) * (width - 140)}" height="8" rx="4" fill="url(#hudGrad)" />
+        <!-- Solid High-Contrast Progress Bar (Single Emerald Accent, No Rainbow Gradient) -->
+        <rect x="70" y="${height - 70}" width="${width - 140}" height="6" rx="3" fill="#1f2430" />
+        <rect x="70" y="${height - 70}" width="${((index + 1) / Math.max(1, scene.narrationSegmentIds?.length || 4)) * (width - 140)}" height="6" rx="3" fill="#10b981" />
       </svg>
     `;
   }

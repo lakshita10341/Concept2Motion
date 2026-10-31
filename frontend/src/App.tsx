@@ -204,89 +204,89 @@ export default function App() {
   const renderStatusBadge = (status: string) => {
     const isRunning = !['completed', 'failed'].includes(status);
     const map: Record<string, { bg: string; text: string }> = {
-      completed: { bg: 'bg-emerald-950/80 border-emerald-500/50 text-emerald-400', text: 'Completed' },
-      failed: { bg: 'bg-rose-950/80 border-rose-500/50 text-rose-400', text: 'Failed' },
-      researching: { bg: 'bg-blue-950/80 border-blue-500/50 text-blue-400', text: 'Researching (Muse Spark)' },
-      teaching: { bg: 'bg-indigo-950/80 border-indigo-500/50 text-indigo-400', text: 'Scripting (Muse Spark)' },
-      simulating: { bg: 'bg-cyan-950/80 border-cyan-500/50 text-cyan-400', text: 'Simulating (Python)' },
-      planning: { bg: 'bg-purple-950/80 border-purple-500/50 text-purple-400', text: 'Visual Planning' },
-      narrating: { bg: 'bg-amber-950/80 border-amber-500/50 text-amber-400', text: 'TTS Voiceover' },
-      critiquing: { bg: 'bg-pink-950/80 border-pink-500/50 text-pink-400', text: 'Meta Llama Critic' },
-      correcting: { bg: 'bg-orange-950/80 border-orange-500/50 text-orange-400', text: 'Auto-Remediating' },
-      rendering: { bg: 'bg-teal-950/80 border-teal-500/50 text-teal-400', text: 'Rendering 1080p MP4' },
+      completed: { bg: 'bg-emerald-950/60 border-emerald-500/40 text-emerald-400', text: 'Completed' },
+      failed: { bg: 'bg-rose-950/60 border-rose-500/40 text-rose-400', text: 'Failed' },
+      researching: { bg: 'bg-zinc-900 border-zinc-700 text-zinc-300', text: 'Researching (Muse Spark)' },
+      teaching: { bg: 'bg-zinc-900 border-zinc-700 text-zinc-300', text: 'Scripting (Muse Spark)' },
+      simulating: { bg: 'bg-zinc-900 border-zinc-700 text-zinc-300', text: 'Simulating (Python)' },
+      planning: { bg: 'bg-zinc-900 border-zinc-700 text-zinc-300', text: 'Visual Planning' },
+      narrating: { bg: 'bg-zinc-900 border-zinc-700 text-zinc-300', text: 'TTS Voiceover' },
+      critiquing: { bg: 'bg-zinc-900 border-zinc-700 text-zinc-300', text: 'Meta Llama Critic' },
+      correcting: { bg: 'bg-amber-950/60 border-amber-500/40 text-amber-400', text: 'Remediating Invariant' },
+      rendering: { bg: 'bg-emerald-950/60 border-emerald-500/40 text-emerald-400', text: 'Rendering 1080p MP4' },
     };
 
-    const s = map[status] || { bg: 'bg-slate-800 text-slate-300 border-slate-600', text: status };
+    const s = map[status] || { bg: 'bg-zinc-900 text-zinc-300 border-zinc-700', text: status };
 
     return (
-      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${s.bg}`}>
-        <span className={`w-2 h-2 rounded-full bg-current ${isRunning ? 'animate-ping' : ''}`}></span>
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-mono border ${s.bg}`}>
+        <span className={`w-1.5 h-1.5 rounded-full bg-current ${isRunning ? 'animate-ping' : ''}`}></span>
         {s.text}
       </span>
     );
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      {/* Top Navigation */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans">
+      {/* Top Navigation Bar: High-Precision Technical Bar */}
+      <header className="border-b border-zinc-800 bg-zinc-900/90 sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-xl shadow-lg shadow-indigo-500/20">
-            <BrainCircuit className="w-6 h-6 text-white" />
+          <div className="p-2 bg-zinc-800 border border-zinc-700 rounded-lg">
+            <BrainCircuit className="w-5 h-5 text-emerald-400" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight text-white">Concept2Motion</h1>
-              <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">Meta AI Hackathon</span>
+              <h1 className="text-base font-bold tracking-tight text-white font-mono">Concept2Motion</h1>
+              <span className="text-[10px] uppercase font-mono font-semibold tracking-wider px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">Meta AI Hackathon</span>
             </div>
-            <p className="text-xs text-slate-400">Autonomous Technical Video Engine Powered by Meta Muse Spark & Open-Weight Critic</p>
+            <p className="text-xs text-zinc-400">Autonomous Technical Video Engine • Meta Muse Spark &amp; Open-Weight Critic</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-xs text-slate-400">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60">
-            <Cpu className="w-4 h-4 text-indigo-400" />
-            <span>Reasoning: <strong className="text-slate-200">Meta Muse Spark 1.3</strong></span>
+        <div className="flex items-center gap-3 text-xs font-mono text-zinc-400">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-zinc-900 border border-zinc-800">
+            <Cpu className="w-3.5 h-3.5 text-emerald-400" />
+            <span>LLM: <strong className="text-zinc-200">Meta Muse Spark 1.3</strong></span>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Invariant Engine: <strong className="text-slate-200">Active</strong></span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-zinc-900 border border-zinc-800">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Invariant Engine: <strong className="text-zinc-200">Active</strong></span>
           </div>
         </div>
       </header>
 
       {/* Main Grid */}
-      <div className="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Left Column: Job Creator & History */}
         <div className="lg:col-span-4 flex flex-col gap-6">
           {/* Generation Configuration Card */}
-          <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl">
-            <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-400" />
-              Generate Technical Video
+          <div className="p-5 rounded-xl bg-zinc-900/90 border border-zinc-800">
+            <h2 className="text-sm font-semibold font-mono text-zinc-100 mb-4 flex items-center gap-2">
+              <Layers className="w-4 h-4 text-emerald-400" />
+              Configure Video Pipeline
             </h2>
 
             <form onSubmit={handleGenerate} className="flex flex-col gap-4">
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5">Topic / Algorithm</label>
+                <label className="block text-xs font-mono text-zinc-400 mb-1.5">Topic / Concept Specification</label>
                 <input
                   type="text"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
-                  placeholder="e.g. How Bloom Filter Works"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/90 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  placeholder="e.g. Distributed Consensus with Raft"
+                  className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-700 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Audience Level</label>
+                  <label className="block text-xs font-mono text-zinc-400 mb-1.5">Audience Target</label>
                   <select
                     value={audienceLevel}
                     onChange={(e) => setAudienceLevel(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-800/90 border border-slate-700 text-xs text-white focus:outline-none"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-xs text-white focus:outline-none focus:border-emerald-500"
                   >
                     <option value="beginner">Beginner</option>
                     <option value="intermediate">Intermediate</option>
@@ -295,11 +295,11 @@ export default function App() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Target Duration</label>
+                  <label className="block text-xs font-mono text-zinc-400 mb-1.5">Target Duration</label>
                   <select
                     value={targetDuration}
                     onChange={(e) => setTargetDuration(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-800/90 border border-slate-700 text-xs text-white focus:outline-none"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-xs text-white focus:outline-none focus:border-emerald-500"
                   >
                     <option value={45}>45 Seconds</option>
                     <option value={60}>60 Seconds</option>
@@ -310,28 +310,27 @@ export default function App() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Voice Style</label>
+                  <label className="block text-xs font-mono text-zinc-400 mb-1.5">Neural Voice</label>
                   <select
                     value={voice}
                     onChange={(e) => setVoice(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-800/90 border border-slate-700 text-xs text-white focus:outline-none"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-xs text-white focus:outline-none focus:border-emerald-500"
                   >
-                    <option value="en-US-GuyNeural">Neural Guy (Clear)</option>
-                    <option value="en-US-JennyNeural">Neural Jenny (Expressive)</option>
+                    <option value="en-US-GuyNeural">Guy (Clear Neutral)</option>
+                    <option value="en-US-JennyNeural">Jenny (Expressive)</option>
                     <option value="en-GB-RyanNeural">Ryan (Academic)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">Visual Aesthetic</label>
+                  <label className="block text-xs font-mono text-zinc-400 mb-1.5">Visual Layout</label>
                   <select
                     value={visualStyle}
                     onChange={(e) => setVisualStyle(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-800/90 border border-slate-700 text-xs text-white focus:outline-none"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-xs text-white focus:outline-none focus:border-emerald-500"
                   >
-                    <option value="minimalist_dark">Minimalist Dark</option>
+                    <option value="minimalist_dark">9:16 Vertical Reel</option>
                     <option value="blueprint">Technical Blueprint</option>
-                    <option value="academic">Academic Lecture</option>
                   </select>
                 </div>
               </div>
@@ -339,17 +338,17 @@ export default function App() {
               <button
                 type="submit"
                 disabled={loading}
-                className="mt-2 w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 font-semibold text-sm text-white shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition disabled:opacity-50"
+                className="mt-2 w-full py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-medium text-xs font-mono text-white flex items-center justify-center gap-2 transition disabled:opacity-50"
               >
                 {loading ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    Generating Autonomous Video...
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Compiling Video Pipeline...
                   </>
                 ) : (
                   <>
-                    <Play className="w-4 h-4 fill-white" />
-                    Launch Generation Pipeline
+                    <Play className="w-3.5 h-3.5 fill-white" />
+                    Compile Video Reel
                   </>
                 )}
               </button>
@@ -357,13 +356,13 @@ export default function App() {
           </div>
 
           {/* Past Generations List */}
-          <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl flex-1 flex flex-col">
-            <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-indigo-400" />
-              Generated Workflows ({recentJobs.length})
+          <div className="p-5 rounded-xl bg-zinc-900/90 border border-zinc-800 flex-1 flex flex-col">
+            <h3 className="text-xs font-mono font-semibold text-zinc-300 mb-3 flex items-center gap-2">
+              <Layers className="w-4 h-4 text-emerald-400" />
+              Pipeline History ({recentJobs.length})
             </h3>
 
-            <div className="flex flex-col gap-2.5 overflow-y-auto max-h-[360px]">
+            <div className="flex flex-col gap-2 overflow-y-auto max-h-[360px]">
               {recentJobs.map((j) => (
                 <button
                   key={j.id}
@@ -374,21 +373,21 @@ export default function App() {
                       setLoading(false);
                     }
                   }}
-                  className={`text-left p-3 rounded-xl border transition flex flex-col gap-1.5 ${
+                  className={`text-left p-2.5 rounded-lg border transition flex flex-col gap-1 ${
                     activeJobId === j.id
-                      ? 'bg-indigo-950/40 border-indigo-500/50 ring-1 ring-indigo-500/30'
-                      : 'bg-slate-800/50 border-slate-700/50 hover:bg-slate-800'
+                      ? 'bg-zinc-800 border-zinc-600'
+                      : 'bg-zinc-950 border-zinc-800 hover:bg-zinc-900'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-xs text-slate-200 truncate max-w-[190px]">{j.request.topic}</span>
+                    <span className="font-medium text-xs text-zinc-200 truncate max-w-[190px]">{j.request.topic}</span>
                     {renderStatusBadge(j.status)}
                   </div>
-                  <div className="flex items-center gap-3 text-[11px] text-slate-400">
+                  <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-400">
                     <span>{new Date(j.createdAt).toLocaleTimeString()}</span>
                     <span>• {j.traces.length} steps</span>
                     {j.correctionCount > 0 && (
-                      <span className="text-amber-400 font-medium">⚡ {j.correctionCount} self-correction</span>
+                      <span className="text-amber-400 font-mono">[{j.correctionCount} corrected]</span>
                     )}
                   </div>
                 </button>
@@ -400,17 +399,17 @@ export default function App() {
         {/* Right Column: Execution Workspace & Interactive Inspector */}
         <div className="lg:col-span-8 flex flex-col gap-6">
           {activeJob ? (
-            <div className="rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl p-6 flex flex-col gap-6">
+            <div className="rounded-xl bg-zinc-900/90 border border-zinc-800 p-6 flex flex-col gap-6">
               
               {/* Job Header */}
-              <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-800">
+              <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-zinc-800">
                 <div>
                   <div className="flex items-center gap-3">
-                    <h2 className="text-lg font-bold text-white">{activeJob.request.topic}</h2>
+                    <h2 className="text-base font-bold font-mono text-white">{activeJob.request.topic}</h2>
                     {renderStatusBadge(activeJob.status)}
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Job ID: <code className="text-indigo-300 font-mono">{activeJob.id}</code> • Started {new Date(activeJob.createdAt).toLocaleTimeString()}
+                  <p className="text-xs text-zinc-400 font-mono mt-1">
+                    Job ID: <code className="text-emerald-400">{activeJob.id}</code> • Started {new Date(activeJob.createdAt).toLocaleTimeString()}
                   </p>
                 </div>
 
@@ -418,63 +417,63 @@ export default function App() {
                   <a
                     href={activeJob.videoUrl}
                     download
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white shadow-lg shadow-indigo-600/20 transition"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-xs font-mono font-medium text-zinc-200 transition"
                   >
-                    <Download className="w-4 h-4" />
-                    Download 1080p MP4
+                    <Download className="w-3.5 h-3.5 text-emerald-400" />
+                    Export 1080p MP4
                   </a>
                 )}
               </div>
 
               {/* Navigation Tabs */}
-              <div className="flex items-center gap-1.5 p-1 bg-slate-800/60 rounded-xl border border-slate-700/50 text-xs overflow-x-auto">
+              <div className="flex items-center gap-1 p-1 bg-zinc-950 rounded-lg border border-zinc-800 text-xs font-mono overflow-x-auto">
                 <button
                   onClick={() => setSelectedTab('video')}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-medium transition ${
-                    selectedTab === 'video' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition ${
+                    selectedTab === 'video' ? 'bg-zinc-800 text-white border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
                   <Eye className="w-3.5 h-3.5" />
-                  Video Preview
+                  Video Reel
                 </button>
 
                 <button
                   onClick={() => setSelectedTab('timeline')}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-medium transition ${
-                    selectedTab === 'timeline' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition ${
+                    selectedTab === 'timeline' ? 'bg-zinc-800 text-white border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
                   <Clock className="w-3.5 h-3.5" />
-                  Agent Execution Timeline ({activeJob.traces.length})
+                  Pipeline Trace ({activeJob.traces.length})
                 </button>
 
                 <button
                   onClick={() => setSelectedTab('critic')}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-medium transition ${
-                    selectedTab === 'critic' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition ${
+                    selectedTab === 'critic' ? 'bg-zinc-800 text-white border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  Critic & Self-Correction
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  Invariant Verification
                   {activeJob.criticReports && activeJob.criticReports.length > 0 && (
-                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                   )}
                 </button>
 
                 <button
                   onClick={() => setSelectedTab('simulation')}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-medium transition ${
-                    selectedTab === 'simulation' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition ${
+                    selectedTab === 'simulation' ? 'bg-zinc-800 text-white border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
                   <Code2 className="w-3.5 h-3.5" />
-                  Simulation Code & States
+                  Simulation Code
                 </button>
 
                 <button
                   onClick={() => setSelectedTab('script')}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-medium transition ${
-                    selectedTab === 'script' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition ${
+                    selectedTab === 'script' ? 'bg-zinc-800 text-white border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
                   <FileText className="w-3.5 h-3.5" />
@@ -483,8 +482,8 @@ export default function App() {
 
                 <button
                   onClick={() => setSelectedTab('sources')}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-medium transition ${
-                    selectedTab === 'sources' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition ${
+                    selectedTab === 'sources' ? 'bg-zinc-800 text-white border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200'
                   }`}
                 >
                   <BookOpen className="w-3.5 h-3.5" />
@@ -499,7 +498,7 @@ export default function App() {
                   <div className="flex flex-col gap-4">
                     {activeJob.videoUrl ? (
                       <div className="flex flex-col items-center">
-                        <div className="rounded-3xl overflow-hidden border-2 border-slate-700/80 bg-black aspect-[9/16] w-full max-w-[360px] max-h-[640px] relative shadow-2xl ring-4 ring-slate-900/50">
+                        <div className="rounded-2xl overflow-hidden border border-zinc-800 bg-black aspect-[9/16] w-full max-w-[360px] max-h-[640px] relative shadow-2xl">
                           <video
                             key={activeJob.videoUrl}
                             src={activeJob.videoUrl}
@@ -509,17 +508,17 @@ export default function App() {
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        <div className="mt-2 text-xs text-slate-400 font-mono flex items-center gap-1.5">
+                        <div className="mt-2 text-xs text-zinc-400 font-mono flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                          9:16 Vertical Reel Format (1080x1920)
+                          9:16 Vertical Reel (1080x1920 @ 60fps)
                         </div>
                       </div>
                     ) : (
-                      <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/40 p-12 flex flex-col items-center justify-center text-center gap-3">
-                        <RefreshCw className="w-8 h-8 text-indigo-400 animate-spin" />
-                        <h4 className="font-semibold text-white">Synthesizing Educational Video</h4>
-                        <p className="text-xs text-slate-400 max-w-sm">
-                          The multi-agent pipeline is executing simulation code, generating neural narration, auditing invariants, and encoding the 1080p MP4.
+                      <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-12 flex flex-col items-center justify-center text-center gap-3">
+                        <RefreshCw className="w-6 h-6 text-emerald-400 animate-spin" />
+                        <h4 className="font-mono text-sm font-semibold text-zinc-200">Compiling Video Pipeline</h4>
+                        <p className="text-xs text-zinc-400 max-w-sm font-mono">
+                          Executing simulation runtime, compiling neural narration tracks, verifying algorithmic invariants, and rendering 1080p MP4.
                         </p>
                       </div>
                     )}
@@ -527,10 +526,10 @@ export default function App() {
                     {activeJob.storyboard && (
                       <div className="grid grid-cols-4 gap-3 mt-2">
                         {activeJob.storyboard.scenes.map((sc, i) => (
-                          <div key={sc.sceneId} className="p-3 rounded-xl bg-slate-800/40 border border-slate-700/40 flex flex-col gap-1 text-xs">
-                            <span className="text-[10px] font-mono text-indigo-400 uppercase">Scene {i + 1}</span>
-                            <span className="font-semibold text-slate-200 truncate">{sc.title}</span>
-                            <span className="text-[11px] text-slate-400">Duration: {sc.durationSeconds.toFixed(1)}s</span>
+                          <div key={sc.sceneId} className="p-3 rounded-lg bg-zinc-950 border border-zinc-800 flex flex-col gap-1 text-xs">
+                            <span className="text-[10px] font-mono text-emerald-400 uppercase">Stage {i + 1}</span>
+                            <span className="font-medium text-zinc-200 truncate">{sc.title}</span>
+                            <span className="text-[11px] text-zinc-500 font-mono">Duration: {sc.durationSeconds.toFixed(1)}s</span>
                           </div>
                         ))}
                       </div>
@@ -540,7 +539,7 @@ export default function App() {
 
                 {/* 2. Observable Agent Timeline */}
                 {selectedTab === 'timeline' && (
-                  <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto pr-2">
+                  <div className="flex flex-col gap-2.5 max-h-[500px] overflow-y-auto pr-2">
                     {activeJob.traces.map((trace, idx) => {
                       const isLastStep = idx === activeJob.traces.length - 1;
                       const showActiveSpinner = isLastStep && isJobRunning;
@@ -548,36 +547,36 @@ export default function App() {
                       return (
                         <div
                           key={trace.id}
-                          className="p-3.5 rounded-xl bg-slate-800/40 border border-slate-700/40 flex items-start gap-3 text-xs"
+                          className="p-3 rounded-lg bg-zinc-950 border border-zinc-800 flex items-start gap-3 text-xs"
                         >
                           <div className="mt-0.5">
                             {showActiveSpinner ? (
-                              <div className="w-4 h-4 rounded-full border-2 border-indigo-400 border-t-transparent animate-spin" />
+                              <div className="w-3.5 h-3.5 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin" />
                             ) : trace.status === 'success' ? (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                             ) : trace.status === 'warning' ? (
-                              <AlertTriangle className="w-4 h-4 text-amber-400" />
+                              <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
                             ) : trace.status === 'error' ? (
-                              <AlertTriangle className="w-4 h-4 text-rose-400" />
+                              <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
                             ) : (
-                              <Info className="w-4 h-4 text-indigo-400" />
+                              <Info className="w-3.5 h-3.5 text-zinc-400" />
                             )}
                           </div>
 
                           <div className="flex-1 flex flex-col gap-1">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-slate-200">{trace.agent}</span>
-                                <span className="text-slate-400">• {trace.action}</span>
+                                <span className="font-semibold text-zinc-200 font-mono">{trace.agent}</span>
+                                <span className="text-zinc-500 font-mono text-[11px]">• {trace.action}</span>
                               </div>
-                              <span className="text-[10px] text-slate-400 font-mono">
+                              <span className="text-[10px] text-zinc-500 font-mono">
                                 {new Date(trace.timestamp).toLocaleTimeString()}
                               </span>
                             </div>
-                            <p className="text-slate-300 text-xs leading-relaxed">{trace.details}</p>
+                            <p className="text-zinc-300 text-xs leading-relaxed">{trace.details}</p>
                             {trace.toolUsed && (
-                              <span className="text-[10px] font-mono text-indigo-400 bg-indigo-950/60 border border-indigo-800/40 px-2 py-0.5 rounded w-fit">
-                                tool: {trace.toolUsed}
+                              <span className="text-[10px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded w-fit">
+                                exec: {trace.toolUsed}
                               </span>
                             )}
                           </div>
@@ -590,11 +589,11 @@ export default function App() {
                 {/* 3. Critic & Autonomous Self-Correction Report */}
                 {selectedTab === 'critic' && (
                   <div className="flex flex-col gap-4">
-                    <div className="p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/30 flex items-center justify-between">
+                    <div className="p-4 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-between">
                       <div>
-                        <h4 className="font-semibold text-white text-sm flex items-center gap-2">
+                        <h4 className="font-semibold font-mono text-zinc-200 text-sm flex items-center gap-2">
                           <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                          Meta Open-Weight Model Verification Engine
+                          Algorithmic Invariant Audit Engine
                         </h4>
                         <p className="text-xs text-slate-400 mt-1">
                           Independent evaluation performed by <strong className="text-indigo-300">Meta Llama 3.3 70B Instruct</strong> and deterministic invariant checkers.
@@ -649,26 +648,26 @@ export default function App() {
                   <div className="flex flex-col gap-4">
                     {activeJob.simulation ? (
                       <>
-                        <div className="p-4 rounded-xl bg-slate-900 border border-slate-800">
+                        <div className="p-4 rounded-lg bg-zinc-950 border border-zinc-800">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-semibold text-indigo-400 font-mono">Sandboxed Executable Runner ({activeJob.simulation.language})</span>
-                            <span className="text-xs text-emerald-400 flex items-center gap-1">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Self-Tests Passed
+                            <span className="text-xs font-semibold text-zinc-300 font-mono">Sandboxed Python Runtime ({activeJob.simulation.language})</span>
+                            <span className="text-xs text-emerald-400 font-mono flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Invariant Tests Passed
                             </span>
                           </div>
-                          <pre className="p-3 rounded-lg bg-slate-950 text-slate-300 text-xs font-mono overflow-x-auto max-h-60 border border-slate-800">
+                          <pre className="p-3 rounded-md bg-zinc-900 text-zinc-300 text-xs font-mono overflow-x-auto max-h-60 border border-zinc-800">
                             {activeJob.simulation.code}
                           </pre>
                         </div>
 
                         <div className="flex flex-col gap-2">
-                          <span className="text-xs font-semibold text-slate-300">Captured State Snapshots ({activeJob.simulation.states.length} steps):</span>
+                          <span className="text-xs font-mono text-zinc-400">Captured State Snapshots ({activeJob.simulation.states.length} states):</span>
                           <div className="grid grid-cols-2 gap-3">
                             {activeJob.simulation.states.map((st) => (
-                              <div key={st.step} className="p-3 rounded-xl bg-slate-800/40 border border-slate-700/40 flex flex-col gap-1.5 text-xs">
-                                <span className="font-bold text-indigo-400">Step {st.step}</span>
-                                <p className="text-slate-300">{st.description}</p>
-                                <div className="p-2 rounded bg-slate-900 font-mono text-[11px] text-slate-400 flex flex-wrap gap-2">
+                              <div key={st.step} className="p-3 rounded-lg bg-zinc-950 border border-zinc-800 flex flex-col gap-1.5 text-xs">
+                                <span className="font-mono font-bold text-emerald-400">State {st.step}</span>
+                                <p className="text-zinc-300">{st.description}</p>
+                                <div className="p-2 rounded bg-zinc-900 font-mono text-[11px] text-zinc-400 flex flex-wrap gap-2 border border-zinc-800">
                                   {Object.entries(st.stateData).map(([k, v]) => (
                                     <span key={k}>{k}: {Array.isArray(v) ? `[${v.join(', ')}]` : String(v ?? 'null')}</span>
                                   ))}
@@ -679,7 +678,7 @@ export default function App() {
                         </div>
                       </>
                     ) : (
-                      <p className="text-xs text-slate-400">Simulation not yet executed.</p>
+                      <p className="text-xs font-mono text-zinc-500">Simulation not yet executed.</p>
                     )}
                   </div>
                 )}
@@ -689,22 +688,22 @@ export default function App() {
                   <div className="flex flex-col gap-3">
                     {activeJob.script ? (
                       activeJob.script.segments.map((seg, idx) => (
-                        <div key={seg.segmentId} className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/40 flex flex-col gap-2 text-xs">
+                        <div key={seg.segmentId} className="p-4 rounded-lg bg-zinc-950 border border-zinc-800 flex flex-col gap-2 text-xs">
                           <div className="flex items-center justify-between">
-                            <span className="font-bold text-slate-200">Segment {idx + 1}: {seg.concept}</span>
+                            <span className="font-mono font-semibold text-zinc-200">Segment {idx + 1}: {seg.concept}</span>
                             {seg.audioDurationSeconds && (
-                              <span className="text-indigo-400 font-mono">{seg.audioDurationSeconds.toFixed(1)}s audio</span>
+                              <span className="text-emerald-400 font-mono">{seg.audioDurationSeconds.toFixed(1)}s audio</span>
                             )}
                           </div>
-                          <p className="text-slate-300 italic text-sm">"{seg.narrationText}"</p>
-                          <span className="text-[11px] text-slate-400"><strong>Learning Outcome:</strong> {seg.learningOutcome}</span>
+                          <p className="text-zinc-300 text-sm font-sans">"{seg.narrationText}"</p>
+                          <span className="text-[11px] text-zinc-500 font-mono"><strong>Takeaway:</strong> {seg.learningOutcome}</span>
                           {seg.audioUrl && (
                             <audio controls src={seg.audioUrl} className="mt-2 h-8 w-full max-w-sm" />
                           )}
                         </div>
                       ))
                     ) : (
-                      <p className="text-xs text-slate-400">Script not yet available.</p>
+                      <p className="text-xs font-mono text-zinc-500">Script not yet available.</p>
                     )}
                   </div>
                 )}
@@ -714,7 +713,7 @@ export default function App() {
                   <div className="flex flex-col gap-3">
                     {activeJob.research ? (
                       activeJob.research.sources.map((src, i) => (
-                        <div key={i} className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/40 flex flex-col gap-2 text-xs">
+                        <div key={i} className="p-4 rounded-lg bg-zinc-950 border border-zinc-800 flex flex-col gap-2 text-xs">
                           <a href={src.url} target="_blank" rel="noreferrer" className="font-bold text-indigo-400 hover:underline">
                             {src.title}
                           </a>
@@ -738,11 +737,11 @@ export default function App() {
 
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/40 p-16 flex flex-col items-center justify-center text-center gap-3">
-              <BrainCircuit className="w-10 h-10 text-indigo-400" />
-              <h3 className="font-bold text-white text-base">Select or Launch a Generation Workflow</h3>
-              <p className="text-xs text-slate-400 max-w-sm">
-                Enter any computer science or technical topic on the left to see the autonomous agent network in action.
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-16 flex flex-col items-center justify-center text-center gap-3">
+              <BrainCircuit className="w-8 h-8 text-zinc-500" />
+              <h3 className="font-mono font-semibold text-zinc-200 text-sm">Select or Queue a Video Compilation</h3>
+              <p className="text-xs text-zinc-400 max-w-sm font-mono">
+                Specify an engineering topic to trigger sandboxed Python simulation, neural script synthesis, and 1080p MP4 rendering.
               </p>
             </div>
           )}
