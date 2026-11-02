@@ -1,13 +1,20 @@
 import { z } from "zod";
 
-export const VideoRequestSchema = z.object({
+export const VideoRequestSchema = z.preprocess((val: any) => {
+  if (val && typeof val === "object") {
+    if (val.durationSeconds && !val.targetDurationSeconds) {
+      return { ...val, targetDurationSeconds: Number(val.durationSeconds) };
+    }
+  }
+  return val;
+}, z.object({
   topic: z.string().min(3),
   audienceLevel: z.enum(["beginner", "intermediate", "advanced"]).default("beginner"),
   targetDurationSeconds: z.number().int().min(30).max(180).default(60),
   visualStyle: z.enum(["blueprint", "cyberpunk", "minimalist_dark", "academic"]).default("minimalist_dark"),
   voice: z.string().default("en-US-GuyNeural"),
   modelProvider: z.enum(["fireworks", "meta_direct", "mock"]).default("fireworks"),
-});
+}));
 
 export type VideoRequest = z.infer<typeof VideoRequestSchema>;
 

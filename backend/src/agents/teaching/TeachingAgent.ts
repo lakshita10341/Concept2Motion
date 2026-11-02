@@ -10,8 +10,8 @@ export class TeachingAgent {
 
   async generateScript(research: ResearchNotes, audienceLevel = "beginner", targetDuration = 60): Promise<TeachingScript> {
     // English speech rate is ~140-150 words per minute => ~2.3 - 2.5 words per second
-    const totalWordsBudget = Math.round(targetDuration * 2.3);
-    const numSegments = targetDuration <= 45 ? 3 : targetDuration <= 60 ? 4 : 5;
+    const totalWordsBudget = Math.round(targetDuration * 2.4);
+    const numSegments = targetDuration <= 45 ? 3 : targetDuration <= 60 ? 4 : targetDuration <= 90 ? 5 : 6;
     const wordsPerSegment = Math.round(totalWordsBudget / numSegments);
 
     const prompt = `You are a Principal Systems Architect and Award-Winning Engineering Reel Scriptwriter following the Technical Engineering Reels standard.

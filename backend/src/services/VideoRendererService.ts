@@ -45,8 +45,11 @@ export class VideoRendererService {
     height = 1920,
     activeWordIndex = 0
   ): string {
-    const rawTitle = scene.title || "Technical Concept";
-    const title = this.escapeXml(rawTitle);
+    const rawTitle = (scene.title || "Technical Concept").trim();
+    const maxChars = 38;
+    const displayTitle = rawTitle.length > maxChars ? rawTitle.slice(0, maxChars - 2) + "..." : rawTitle;
+    const title = this.escapeXml(displayTitle);
+    const titleFontSize = displayTitle.length > 28 ? 30 : displayTitle.length > 20 ? 35 : 42;
     const props = scene.customProps || {};
     const explanation = this.escapeXml(props.explanation || scene.concept || "Concept Walkthrough");
     const algo = props.algorithm;
@@ -175,162 +178,279 @@ export class VideoRendererService {
       });
       centerVisualSvg = boxes;
 
-    } else if (algo === "Raft Consensus" || (rawTitle && rawTitle.toLowerCase().includes("raft"))) {
-      // 5-Node Raft Cluster Architecture Visualization for Reels
-      badgeText = `RAFT CONSENSUS • TERM ${index >= 1 ? "2" : "1"}`;
-      const simState = props.simulationState || {};
-      const action = simState.action || (index === 0 ? "TIMEOUT" : index === 1 ? "VOTE" : index === 2 ? "LEADER" : "COMMITTED");
-
-      const cx = width / 2;
-      const cy = height / 2 - 120;
-      const r = 260; // cluster radius
-
-      const nodeCoords = [
-        { id: "Node A", angle: -90, role: index >= 2 ? "LEADER" : index === 1 ? "CANDIDATE" : "FOLLOWER" },
-        { id: "Node B", angle: -18, role: index >= 2 ? "FOLLOWER (Synced)" : "FOLLOWER" },
-        { id: "Node C", angle: 54, role: index >= 2 ? "FOLLOWER (Synced)" : "FOLLOWER" },
-        { id: "Node D", angle: 126, role: "FOLLOWER" },
-        { id: "Node E", angle: 198, role: "FOLLOWER" },
-      ];
-
-      let clusterNodesSvg = "";
-      let connectingBeams = "";
-
-      nodeCoords.forEach((node) => {
-        const rad = (node.angle * Math.PI) / 180;
-        const nx = cx + r * Math.cos(rad);
-        const ny = cy + r * Math.sin(rad);
-
-        const isLeader = node.role.startsWith("LEADER");
-        const isCandidate = node.role === "CANDIDATE";
-        const isQuorumFollower = index >= 2 && (node.id === "Node B" || node.id === "Node C");
-
-        let nodeFill = "#0f172a";
-        let nodeStroke = "#334155";
-        let badgeBg = "#1e293b";
-        let badgeColor = "#94a3b8";
-
-        if (isLeader) {
-          nodeFill = "#064e3b";
-          nodeStroke = "#10b981";
-          badgeBg = "#047857";
-          badgeColor = "#ffffff";
-        } else if (isCandidate) {
-          nodeFill = "#78350f";
-          nodeStroke = "#f59e0b";
-          badgeBg = "#b45309";
-          badgeColor = "#ffffff";
-        } else if (isQuorumFollower) {
-          nodeFill = "#1e3a5f";
-          nodeStroke = "#38bdf8";
-          badgeBg = "#0284c7";
-          badgeColor = "#ffffff";
-        }
-
-        // Draw connection beam from Leader/Candidate to Quorum peers
-        if ((isLeader || isCandidate) && (node.id === "Node A")) {
-          const bRad = (nodeCoords[1].angle * Math.PI) / 180;
-          const cRad = (nodeCoords[2].angle * Math.PI) / 180;
-          connectingBeams += `
-            <line x1="${nx}" y1="${ny}" x2="${cx + r * Math.cos(bRad)}" y2="${cy + r * Math.sin(bRad)}" stroke="#10b981" stroke-width="4" stroke-dasharray="8 6" />
-            <line x1="${nx}" y1="${ny}" x2="${cx + r * Math.cos(cRad)}" y2="${cy + r * Math.sin(cRad)}" stroke="#10b981" stroke-width="4" stroke-dasharray="8 6" />
-          `;
-        }
-
-        clusterNodesSvg += `
-          <g transform="translate(${nx}, ${ny})">
-            <circle r="68" fill="${nodeFill}" stroke="${nodeStroke}" stroke-width="4" />
-            <text y="-8" font-family="DejaVu Sans Mono, monospace" font-size="22" font-weight="bold" fill="#f8fafc" text-anchor="middle">${node.id}</text>
-            <rect x="-60" y="14" width="120" height="28" rx="8" fill="${badgeBg}" />
-            <text y="33" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="${badgeColor}" text-anchor="middle">${node.role}</text>
-          </g>
-        `;
-      });
-
-      centerVisualSvg = `
-        <g>
-          <!-- Central Cluster Core -->
-          <circle cx="${cx}" cy="${cy}" r="340" fill="#070d1a" stroke="#1e293b" stroke-width="2" stroke-dasharray="10 10" />
-          
-          <!-- Communication Beams -->
-          ${connectingBeams}
-
-          <!-- Cluster Server Nodes -->
-          ${clusterNodesSvg}
-
-          <!-- Center Status Card -->
-          <g transform="translate(${cx - 180}, ${cy - 45})">
-            <rect width="360" height="90" rx="16" fill="#0b1329" stroke="#38bdf8" stroke-width="2" />
-            <text x="180" y="32" font-family="DejaVu Sans Mono, monospace" font-size="16" font-weight="bold" fill="#38bdf8" text-anchor="middle">STATUS: ${action}</text>
-            <text x="180" y="64" font-family="DejaVu Sans Mono, monospace" font-size="14" fill="#94a3b8" text-anchor="middle">QUORUM: 3/5 NODES (MAJORITY)</text>
-          </g>
-        </g>
-      `;
-
     } else {
-      // Universal Dynamic Multi-Stage Architecture Cards (DNS, Protocols, Caches, OS, DBs)
-      badgeText = `STEP ${index + 1} OF ${scene.narrationSegmentIds?.length || 4}`;
+      // 4 Completely Distinct Architectural Layouts (Zero Shared Wireframe)
+      const layoutType = index % 4; // 0: Terminal HUD, 1: Mechanical Topology, 2: Failure Partition, 3: Invariant Matrix
+      const aiSpec = props.diagramSpec;
+      const totalSteps = props.totalSteps || 4;
+      const stepNum = index + 1;
 
-      const cardW = 920;
-      const cardX = (width - cardW) / 2;
-      const startY = height / 2 - 340;
+      // Safe dynamic data extraction from AI spec or segment concepts
+      const conceptName = (scene.concept || scene.title || "Architecture").trim();
+      const nodeA = {
+        title: this.escapeXml(aiSpec?.nodeA?.title || (props.allConcepts?.[0] || "CLIENT INGRESS").slice(0, 18).toUpperCase()),
+        subtitle: this.escapeXml(aiSpec?.nodeA?.subtitle || "DISPATCHER"),
+        role: this.escapeXml(aiSpec?.nodeA?.role || "CLIENT"),
+        status: this.escapeXml(aiSpec?.nodeA?.status || "ACTIVE"),
+      };
 
-      const concepts = (props.allConcepts && props.allConcepts.length > 0)
-        ? props.allConcepts
-        : ["1. System Initialization", "2. State Transformation", "3. Invariant Verification", "4. Deterministic Output"];
+      const nodeB = {
+        title: this.escapeXml(aiSpec?.nodeB?.title || conceptName.slice(0, 20).toUpperCase()),
+        subtitle: this.escapeXml(aiSpec?.nodeB?.subtitle || "CORE ENGINE"),
+        role: this.escapeXml(aiSpec?.nodeB?.role || "ORCHESTRATOR"),
+        status: this.escapeXml(aiSpec?.nodeB?.status || "PROCESSING"),
+      };
 
-      const outcomes = (props.allOutcomes && props.allOutcomes.length > 0)
-        ? props.allOutcomes
-        : [
-            "Initialize parameters and system invariants",
-            "Transform states and process inputs",
-            "Maintain consistency guarantees",
-            "Return verified output with strict bounds"
-          ];
+      const nodeC = {
+        title: this.escapeXml(aiSpec?.nodeC?.title || (props.allConcepts?.[props.allConcepts?.length - 1] || "STATE STORE").slice(0, 18).toUpperCase()),
+        subtitle: this.escapeXml(aiSpec?.nodeC?.subtitle || "PERSISTENCE"),
+        role: this.escapeXml(aiSpec?.nodeC?.role || "STORAGE"),
+        status: this.escapeXml(aiSpec?.nodeC?.status || "COMMITTED"),
+      };
 
-      const colors = [
-        { activeFill: "#1e3a5f", activeStroke: "#38bdf8", text: "#60a5fa" },
-        { activeFill: "#2e1065", activeStroke: "#a855f7", text: "#c084fc" },
-        { activeFill: "#064e3b", activeStroke: "#10b981", text: "#34d399" },
-        { activeFill: "#831843", activeStroke: "#ec4899", text: "#f472b6" },
-      ];
+      const flowPacket = this.escapeXml(aiSpec?.flow?.packetLabel || "SYNC_PAYLOAD: 128B");
+      const invBadge = this.escapeXml(aiSpec?.invariant?.badge || "SYSTEM INVARIANT");
+      const invRule = this.escapeXml(aiSpec?.invariant?.rule || props.learningOutcome || "Deterministic state transitions preserved under concurrency");
+      const metricText = this.escapeXml(aiSpec?.metricText || `P99: 1.4MS • 500K REQ/S`);
 
-      let stepCardsSvg = "";
-      const displayCount = Math.min(4, Math.max(concepts.length, 3));
+      // Multi-stage top progress track
+      const allConcepts: string[] = props.allConcepts || [conceptName];
+      const maxPills = Math.min(allConcepts.length, 5);
+      let progressPills = "";
+      const pillW = Math.floor(920 / maxPills) - 10;
 
-      for (let sIdx = 0; sIdx < displayCount; sIdx++) {
-        const cTitle = this.escapeXml((concepts[sIdx] || `Phase ${sIdx + 1}`).toUpperCase());
-        const cDesc = this.escapeXml((outcomes[sIdx] || "System invariant guaranteed").slice(0, 75));
-        const isActive = index === sIdx;
-        const isPassed = index > sIdx;
-        const style = colors[sIdx % colors.length];
+      for (let p = 0; p < maxPills; p++) {
+        const isCurrent = p === index;
+        const isPast = p < index;
+        const pLabel = this.escapeXml((allConcepts[p] || `Stage ${p + 1}`).slice(0, 14));
+        const pBg = isCurrent ? "#042f2e" : isPast ? "#0f172a" : "#090d16";
+        const pStroke = isCurrent ? "#10b981" : isPast ? "#334155" : "#1e293b";
+        const pText = isCurrent ? "#34d399" : isPast ? "#94a3b8" : "#475569";
+        const pIcon = isPast ? "✓" : `${p + 1}`;
 
-        const cardFill = isActive ? style.activeFill : isPassed ? "#1e293b" : "#0f172a";
-        const cardStroke = isActive ? style.activeStroke : isPassed ? "#475569" : "#334155";
-        const strokeW = isActive ? 4 : 2;
-        const titleColor = isActive ? style.text : isPassed ? "#cbd5e1" : "#64748b";
-        const descColor = isActive ? "#ffffff" : isPassed ? "#94a3b8" : "#475569";
-        const yOffset = sIdx * 150;
-
-        stepCardsSvg += `
-          <!-- Step ${sIdx + 1} Card -->
-          <rect x="40" y="${yOffset}" width="840" height="110" rx="20" fill="${cardFill}" stroke="${cardStroke}" stroke-width="${strokeW}" />
-          ${isActive ? `<circle cx="64" cy="${yOffset + 55}" r="8" fill="${style.activeStroke}" />` : ""}
-          <text x="${isActive ? 90 : 80}" y="${yOffset + 48}" font-family="DejaVu Sans, Arial" font-size="20" font-weight="bold" fill="${titleColor}">${sIdx + 1}. ${cTitle}</text>
-          <text x="${isActive ? 90 : 80}" y="${yOffset + 82}" font-family="DejaVu Sans, Arial" font-size="17" fill="${descColor}">${cDesc}</text>
-          ${
-            sIdx < displayCount - 1
-              ? `<path d="M 460 ${yOffset + 110} L 460 ${yOffset + 145}" stroke="${index > sIdx ? style.activeStroke : "#334155"}" stroke-width="4" stroke-dasharray="6" />`
-              : ""
-          }
+        progressPills += `
+          <g transform="translate(${p * (pillW + 10)}, 0)">
+            <rect width="${pillW}" height="38" rx="8" fill="${pBg}" stroke="${pStroke}" stroke-width="${isCurrent ? '2' : '1'}" />
+            <text x="14" y="24" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="${pText}">${pIcon}</text>
+            <text x="${pillW / 2 + 10}" y="24" font-family="DejaVu Sans Mono, monospace" font-size="11" font-weight="${isCurrent ? 'bold' : 'normal'}" fill="${pText}" text-anchor="middle">${pLabel}</text>
+          </g>
         `;
       }
 
-      centerVisualSvg = `
-        <g transform="translate(${cardX}, ${startY})">
-          ${stepCardsSvg}
-        </g>
-      `;
+      if (layoutType === 0) {
+        // SCENE 1: Interactive Developer Terminal / Client Console (The Hook & Ingress)
+        badgeText = `CLIENT INGRESS • STAGE 1/${totalSteps}`;
+        const packetColor = activeWordIndex % 2 === 1 ? "#34d399" : "#38bdf8";
+
+        centerVisualSvg = `
+          <g transform="translate(70, 310)">
+            <!-- Top Progress Pills -->
+            <g transform="translate(10, 0)">${progressPills}</g>
+
+            <!-- Terminal Window Container -->
+            <g transform="translate(10, 60)">
+              <!-- macOS Window Chrome Header -->
+              <rect width="920" height="42" rx="12" fill="#131826" stroke="#2a344a" stroke-width="1.5" />
+              <circle cx="28" cy="21" r="6" fill="#ef4444" />
+              <circle cx="48" cy="21" r="6" fill="#f59e0b" />
+              <circle cx="68" cy="21" r="6" fill="#10b981" />
+              <text x="460" y="26" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#94a3b8" text-anchor="middle">TERMINAL: ${this.escapeXml(conceptName.slice(0, 32).toUpperCase())} INGRESS</text>
+
+              <!-- Terminal Black Canvas Body -->
+              <rect y="42" width="920" height="300" rx="0" fill="#070a12" stroke="#2a344a" stroke-width="1.5" />
+
+              <!-- Terminal Code & Telemetry Stream -->
+              <g transform="translate(30, 80)">
+                <text y="0" font-family="DejaVu Sans Mono, monospace" font-size="14" fill="#38bdf8">&gt; curl -X POST /api/v1/intent \\</text>
+                <text y="26" font-family="DejaVu Sans Mono, monospace" font-size="14" fill="#94a3b8">    -H "X-Client-Node: ${nodeA.title}" \\</text>
+                <text y="52" font-family="DejaVu Sans Mono, monospace" font-size="14" fill="#94a3b8">    -H "X-Protocol-Switch: ${nodeB.title}" \\</text>
+                <text y="78" font-family="DejaVu Sans Mono, monospace" font-size="14" fill="#94a3b8">    -d '{"payload": "${flowPacket}"}'</text>
+
+                <!-- Status Line -->
+                <line x1="0" y1="105" x2="860" y2="105" stroke="#1e293b" stroke-width="1" />
+                <rect y="120" width="860" height="46" rx="8" fill="#0a192f" stroke="#0284c7" stroke-width="1.5" />
+                <circle cx="24" cy="143" r="6" fill="${packetColor}" />
+                <text x="45" y="148" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#38bdf8">HTTP/2 STREAM ESTABLISHED</text>
+                <text x="830" y="148" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#34d399" text-anchor="end">${metricText}</text>
+
+                <text y="195" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#64748b">STATUS: DISPATCHING REQ_INTENT TO CENTRAL ROUTER...</text>
+              </g>
+
+              <!-- Bottom Terminal Status Bar -->
+              <g transform="translate(0, 342)">
+                <rect width="920" height="40" rx="10" fill="#0d1424" stroke="#1e293b" stroke-width="1" />
+                <text x="30" y="25" font-family="DejaVu Sans Mono, monospace" font-size="12" fill="#94a3b8">CLIENT BINDING: ACTIVE</text>
+                <text x="890" y="25" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#38bdf8" text-anchor="end">TLS 1.3 ENCRYPTED</text>
+              </g>
+            </g>
+          </g>
+        `;
+
+      } else if (layoutType === 1) {
+        // SCENE 2: The Core Mechanical Topology & Switch Hub (Intricate Network Grid)
+        badgeText = `CORE MECHANISM • STAGE 2/${totalSteps}`;
+
+        centerVisualSvg = `
+          <g transform="translate(70, 310)">
+            <!-- Top Progress Pills -->
+            <g transform="translate(10, 0)">${progressPills}</g>
+
+            <!-- Topology Canvas -->
+            <g transform="translate(10, 60)">
+              <!-- Central Switch / Routing Hub (Top Center) -->
+              <g transform="translate(270, 10)">
+                <rect width="380" height="120" rx="18" fill="#042f2e" stroke="#10b981" stroke-width="3" />
+                <rect x="20" y="12" width="340" height="26" rx="6" fill="#065f46" />
+                <text x="190" y="30" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#6ee7b7" text-anchor="middle">CENTRAL ENGINE: ${nodeB.title}</text>
+                <text x="190" y="68" font-family="DejaVu Sans Mono, monospace" font-size="14" font-weight="bold" fill="#f8fafc" text-anchor="middle">${nodeB.subtitle}</text>
+                <text x="190" y="96" font-family="DejaVu Sans Mono, monospace" font-size="12" fill="#facc15" text-anchor="middle">INSPECTION &amp; ROUTING ACTIVE</text>
+              </g>
+
+              <!-- Laser Transmission Beams to Downstream Storage Nodes -->
+              <path d="M 360 130 L 190 220" stroke="#10b981" stroke-width="3.5" stroke-dasharray="8 6" />
+              <path d="M 560 130 L 730 220" stroke="#38bdf8" stroke-width="3.5" stroke-dasharray="8 6" />
+
+              <!-- Left Component Storage / Remitter CBS -->
+              <g transform="translate(20, 220)">
+                <rect width="350" height="135" rx="14" fill="#0c172b" stroke="#1e3a5f" stroke-width="2" />
+                <rect x="15" y="12" width="320" height="24" rx="5" fill="#132338" />
+                <text x="175" y="28" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#93c5fd" text-anchor="middle">PARTITION A: ${nodeA.title}</text>
+                <text x="175" y="66" font-family="DejaVu Sans Mono, monospace" font-size="14" font-weight="bold" fill="#f8fafc" text-anchor="middle">ATOMIC RECORD MUTATION</text>
+                <line x1="20" y1="84" x2="330" y2="84" stroke="#1e293b" stroke-width="1" />
+                <text x="175" y="108" font-family="DejaVu Sans Mono, monospace" font-size="12" fill="#34d399" text-anchor="middle">STATE: VERIFIED &amp; COMMITTED</text>
+              </g>
+
+              <!-- Right Component Storage / Beneficiary CBS -->
+              <g transform="translate(550, 220)">
+                <rect width="350" height="135" rx="14" fill="#0c172b" stroke="#0284c7" stroke-width="2" />
+                <rect x="15" y="12" width="320" height="24" rx="5" fill="#082f49" />
+                <text x="175" y="28" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#38bdf8" text-anchor="middle">PARTITION B: ${nodeC.title}</text>
+                <text x="175" y="66" font-family="DejaVu Sans Mono, monospace" font-size="14" font-weight="bold" fill="#f8fafc" text-anchor="middle">SETTLEMENT ACCOUNTS</text>
+                <line x1="20" y1="84" x2="330" y2="84" stroke="#1e293b" stroke-width="1" />
+                <text x="175" y="108" font-family="DejaVu Sans Mono, monospace" font-size="12" fill="#38bdf8" text-anchor="middle">STATE: BALANCE REFLECTED</text>
+              </g>
+
+              <!-- Center Flow Packet Pill -->
+              <g transform="translate(320, 160)">
+                <rect width="280" height="34" rx="8" fill="#172554" stroke="#38bdf8" stroke-width="1.5" />
+                <text x="140" y="22" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#93c5fd" text-anchor="middle">${flowPacket}</text>
+              </g>
+
+              <!-- Bottom Architectural Invariant Card -->
+              <g transform="translate(10, 380)">
+                <rect width="900" height="54" rx="10" fill="#0c172b" stroke="#10b981" stroke-width="1.5" />
+                <circle cx="28" cy="27" r="6" fill="#10b981" />
+                <text x="48" y="32" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#34d399">MECHANISM:</text>
+                <text x="155" y="32" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#f8fafc">${this.escapeXml(invRule.slice(0, 68))}</text>
+              </g>
+            </g>
+          </g>
+        `;
+
+      } else if (layoutType === 2) {
+        // SCENE 3: Production Failure & Split-Brain Partition Stress (Crimson & Amber Alert HUD)
+        badgeText = `FAILURE STRESS • STAGE 3/${totalSteps}`;
+
+        centerVisualSvg = `
+          <g transform="translate(70, 310)">
+            <!-- Top Progress Pills -->
+            <g transform="translate(10, 0)">${progressPills}</g>
+
+            <g transform="translate(10, 60)">
+              <!-- Top Alert HUD Bar -->
+              <rect width="920" height="52" rx="10" fill="#2d0607" stroke="#ef4444" stroke-width="2" />
+              <circle cx="26" cy="26" r="7" fill="#ef4444" />
+              <text x="46" y="32" font-family="DejaVu Sans Mono, monospace" font-size="14" font-weight="bold" fill="#fca5a5">CRITICAL: PRODUCTION FAILURE ESCALATION</text>
+              <text x="890" y="32" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#ef4444" text-anchor="end">ALERT LEVEL 1</text>
+
+              <!-- Left Isolated Node (Failing Quorum) -->
+              <g transform="translate(10, 75)">
+                <rect width="400" height="230" rx="14" fill="#1c0f13" stroke="#7f1d1d" stroke-width="2" />
+                <text x="200" y="38" font-family="DejaVu Sans Mono, monospace" font-size="16" font-weight="bold" fill="#fca5a5" text-anchor="middle">PRIMARY [${nodeA.title}]</text>
+                <rect x="25" y="60" width="350" height="34" rx="6" fill="#291216" />
+                <text x="200" y="82" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#f87171" text-anchor="middle">HEARTBEAT TIMEOUT: 500MS</text>
+                <rect x="25" y="105" width="350" height="34" rx="6" fill="#3b0f16" stroke="#ef4444" stroke-width="1" />
+                <text x="200" y="127" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#fca5a5" text-anchor="middle">UNACKNOWLEDGED WRITES: 84</text>
+                <text x="200" y="185" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#fca5a5" text-anchor="middle">QUORUM STATUS: FAILING</text>
+              </g>
+
+              <!-- Severed Network Cut (Split Brain Barrier) -->
+              <line x1="460" y1="75" x2="460" y2="305" stroke="#ef4444" stroke-width="5" stroke-dasharray="14 10" />
+              <g transform="translate(425, 160)">
+                <rect width="70" height="40" rx="8" fill="#7f1d1d" stroke="#ef4444" stroke-width="2" />
+                <text x="35" y="26" font-family="DejaVu Sans Mono, monospace" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">⚡</text>
+              </g>
+
+              <!-- Right Majority Recovery Quorum Node -->
+              <g transform="translate(510, 75)">
+                <rect width="400" height="230" rx="14" fill="#042f2e" stroke="#10b981" stroke-width="2" />
+                <text x="200" y="38" font-family="DejaVu Sans Mono, monospace" font-size="16" font-weight="bold" fill="#6ee7b7" text-anchor="middle">MAJORITY PARTITION</text>
+                <rect x="25" y="60" width="350" height="34" rx="6" fill="#065f46" />
+                <text x="200" y="82" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#34d399" text-anchor="middle">NODE REPLICA QUORUM (2/3)</text>
+                <rect x="25" y="105" width="350" height="34" rx="6" fill="#022c22" stroke="#10b981" stroke-width="1" />
+                <text x="200" y="127" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#facc15" text-anchor="middle">ELECTION TRIGGERED: FAILOVER</text>
+                <text x="200" y="185" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#6ee7b7" text-anchor="middle">SPLIT-BRAIN SAFELY PREVENTED</text>
+              </g>
+
+              <!-- Bottom Failure Tradeoff Warning -->
+              <g transform="translate(10, 330)">
+                <rect width="900" height="54" rx="10" fill="#18181b" stroke="#3f3f46" stroke-width="1.5" />
+                <text x="30" y="33" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#f87171">PRODUCTION TRADEOFF:</text>
+                <text x="220" y="33" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#f4f4f5">SYSTEM PREFERS CONSISTENCY OVER SILENT DATA CORRUPTION</text>
+              </g>
+            </g>
+          </g>
+        `;
+
+      } else {
+        // SCENE 4: Invariant Proof & Engineering Tradeoff Matrix (Comparison Ledger)
+        badgeText = `INVARIANT PROOF • FINAL STAGE`;
+
+        centerVisualSvg = `
+          <g transform="translate(70, 310)">
+            <!-- Top Progress Pills -->
+            <g transform="translate(10, 0)">${progressPills}</g>
+
+            <g transform="translate(10, 60)">
+              <!-- Top Verified Banner -->
+              <rect width="920" height="52" rx="10" fill="#032e25" stroke="#10b981" stroke-width="2" />
+              <circle cx="26" cy="26" r="7" fill="#10b981" />
+              <text x="46" y="32" font-family="DejaVu Sans Mono, monospace" font-size="14" font-weight="bold" fill="#6ee7b7">ARCHITECTURAL INVARIANT VERIFIED &amp; SEALED</text>
+              <text x="890" y="32" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#34d399" text-anchor="end">ZERO DATA LOSS</text>
+
+              <!-- Left Comparison Box: Guaranteed Properties -->
+              <g transform="translate(10, 75)">
+                <rect width="440" height="230" rx="14" fill="#062e26" stroke="#10b981" stroke-width="2" />
+                <rect x="20" y="14" width="400" height="28" rx="6" fill="#024738" />
+                <text x="220" y="33" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#34d399" text-anchor="middle">GUARANTEED SYSTEM PROPERTIES</text>
+                
+                <text x="30" y="80" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#a7f3d0">✓ ATOMIC STATE TRANSITIONS</text>
+                <text x="30" y="115" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#a7f3d0">✓ DETERMINISTIC CONCURRENCY</text>
+                <text x="30" y="150" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#a7f3d0">✓ STRICT LINEARIZABLE READS</text>
+                <text x="30" y="185" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#34d399">✓ ZERO UNCOMMITTED DRIFT</text>
+              </g>
+
+              <!-- Right Comparison Box: The Engineering Sacrifice -->
+              <g transform="translate(470, 75)">
+                <rect width="440" height="230" rx="14" fill="#13192b" stroke="#334155" stroke-width="2" />
+                <rect x="20" y="14" width="400" height="28" rx="6" fill="#1e293b" />
+                <text x="220" y="33" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#94a3b8" text-anchor="middle">ENGINEERING TRADE-OFF</text>
+
+                <text x="30" y="80" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#cbd5e1">✗ RAW THROUGHPUT CAPPED</text>
+                <text x="30" y="115" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#cbd5e1">✗ NETWORK ROUND-TRIP LATENCY</text>
+                <text x="30" y="150" font-family="DejaVu Sans Mono, monospace" font-size="13" fill="#cbd5e1">✗ MAJORITY QUORUM OVERHEAD</text>
+                <text x="30" y="185" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#f59e0b">✗ BOUND TO PHYSICAL LAWS</text>
+              </g>
+
+              <!-- Bottom Durable Mental Model Badge -->
+              <g transform="translate(10, 330)">
+                <rect width="900" height="54" rx="10" fill="#091424" stroke="#1d4ed8" stroke-width="1.5" />
+                <text x="450" y="33" font-family="DejaVu Sans Mono, monospace" font-size="13" font-weight="bold" fill="#93c5fd" text-anchor="middle">DURABLE MENTAL MODEL: ${invRule.toUpperCase().slice(0, 56)}</text>
+              </g>
+            </g>
+          </g>
+        `;
+      }
     }
 
     const keyPillText = isBloom
@@ -355,7 +475,7 @@ export class VideoRendererService {
         <line x1="70" y1="200" x2="${width - 70}" y2="200" stroke="#1f2430" stroke-width="1.5" />
         <line x1="70" y1="1340" x2="${width - 70}" y2="1340" stroke="#1f2430" stroke-width="1.5" stroke-dasharray="6 6" />
 
-        <!-- Top Engineering Status Strip (Anti-Slop: Monolithic Accent & Concrete Telemetry) -->
+        <!-- Top Engineering Status Strip (Anti-Slop: Monolithic Accent and Concrete Telemetry) -->
         <rect x="70" y="80" width="${width - 140}" height="3" fill="#10b981" />
         <g transform="translate(70, 105)">
           <!-- Telemetry Tag 1 -->
@@ -369,36 +489,19 @@ export class VideoRendererService {
 
           <!-- Telemetry Tag 3 -->
           <rect x="${width - 140 - 150}" width="150" height="34" rx="6" fill="#11141c" stroke="#242b3b" stroke-width="1" />
-          <text x="${width - 140 - 75}" y="23" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#94a3b8" text-anchor="middle">STAGE ${index + 1} / 4</text>
+          <text x="${width - 140 - 75}" y="23" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#94a3b8" text-anchor="middle">STAGE ${index + 1} / ${props.totalSteps || 4}</text>
         </g>
 
-        <!-- High-Contrast Title & Subtitle (No gradient text) -->
-        <text x="70" y="200" font-family="DejaVu Sans, Arial" font-size="44" font-weight="800" fill="#f8fafc">${title}</text>
+        <!-- High-Contrast Title and Subtitle (Dynamically scaled and strictly bounded) -->
+        <text x="70" y="200" font-family="DejaVu Sans, Arial" font-size="${titleFontSize}" font-weight="800" fill="#f8fafc">${title}</text>
         <text x="70" y="236" font-family="DejaVu Sans Mono, monospace" font-size="16" font-weight="600" fill="#64748b" letter-spacing="1">PRODUCTION ARCHITECTURE SPECIFICATION</text>
 
-        <!-- Center Visual Active Canvas (Upper 2/3: y in 260 to 1320) -->
+        <!-- Center Visual Active Canvas (Upper 2/3: y in 260 to 1140) -->
         <g transform="translate(0, 0)">
           ${centerVisualSvg}
         </g>
 
-        <!-- Upper 2/3 Architectural Canvas: Invariant Takeaway Card -->
-        <g transform="translate(70, 980)">
-          <!-- Card Backdrop -->
-          <rect width="${width - 140}" height="150" rx="14" fill="#0c0e14" stroke="#1f2430" stroke-width="1.5" />
-          
-          <!-- Key Invariant Badge -->
-          <rect x="28" y="20" width="130" height="26" rx="5" fill="#10b981" />
-          <text x="93" y="38" font-family="DejaVu Sans Mono, monospace" font-size="12" font-weight="bold" fill="#042f2e" text-anchor="middle" letter-spacing="1">TAKEAWAY</text>
-
-          <!-- Core Mechanical Insight -->
-          <text x="28" y="78" font-family="DejaVu Sans, Arial" font-size="24" font-weight="700" fill="#ffffff">${explanation.slice(0, 60)}</text>
-          
-          <rect x="28" y="98" width="${Math.min(width - 196, 600)}" height="34" rx="6" fill="#141824" stroke="#2d3748" stroke-width="1" />
-          <text x="44" y="120" font-family="DejaVu Sans Mono, monospace" font-size="14" font-weight="bold" fill="#38bdf8">INVARIANT:</text>
-          <text x="145" y="120" font-family="DejaVu Sans Mono, monospace" font-size="14" font-weight="bold" fill="#facc15">${keyPillText}</text>
-        </g>
-
-        <!-- Lower 1/3 Safe Zone: (y >= 1150) intentionally pitch black and clean for Character Avatar & Karaoke Captions -->
+        <!-- Lower 1/3 Safe Zone: (y >= 1150) intentionally pitch black and clean for Character Avatar and Karaoke Captions -->
       </svg>
     `;
 
@@ -407,7 +510,8 @@ export class VideoRendererService {
       .replace(/&QUOT;/gi, "&#34;")
       .replace(/&AMP;/gi, "&amp;")
       .replace(/&LT;/gi, "&lt;")
-      .replace(/&GT;/gi, "&gt;");
+      .replace(/&GT;/gi, "&gt;")
+      .replace(/&(?!(amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)/g, "&amp;");
   }
 
   async renderFinalVideo(
@@ -486,37 +590,65 @@ export class VideoRendererService {
       });
     });
 
-    // 2. Render timed scenes
+    // 2. Render timed scenes with progressive motion subframes
     for (let i = 0; i < storyboard.scenes.length; i++) {
       const scene = storyboard.scenes[i];
       const segment = script.segments[i];
-      const svgPath = path.join(jobDir, `scene_${i + 1}.svg`);
-      const pngPath = path.join(jobDir, `scene_${i + 1}.png`);
       const sceneVideoPath = path.join(jobDir, `scene_${i + 1}.mp4`);
       const duration = Math.max(2.5, segment.audioDurationSeconds || scene.durationSeconds || 4.0);
 
-      const svgContent = this.generateSceneSVG(scene, i, reelWidth, reelHeight);
-      fs.writeFileSync(svgPath, svgContent, "utf-8");
+      // Generate 2 progressive sub-phases for each scene to give motion (Initial State -> Active Pulse)
+      const subDuration = duration / 2;
+      const subVideoPaths: string[] = [];
 
-      const resvg = new Resvg(svgContent, {
-        fitTo: { mode: "width", value: reelWidth },
-        font: {
-          loadSystemFonts: true,
-          defaultFontFamily: "DejaVu Sans",
-        },
-      });
-      fs.writeFileSync(pngPath, resvg.render().asPng());
+      for (let s = 0; s < 2; s++) {
+        const subPngPath = path.join(jobDir, `scene_${i + 1}_sub_${s}.png`);
+        const subVidPath = path.join(jobDir, `scene_${i + 1}_sub_${s}.mp4`);
+        const svgContent = this.generateSceneSVG(scene, i, reelWidth, reelHeight, s);
+
+        const resvg = new Resvg(svgContent, {
+          fitTo: { mode: "width", value: reelWidth },
+          font: {
+            loadSystemFonts: true,
+            defaultFontFamily: "DejaVu Sans",
+          },
+        });
+        fs.writeFileSync(subPngPath, resvg.render().asPng());
+
+        await new Promise<void>((resolve, reject) => {
+          const proc = spawn(this.ffmpegPath, [
+            "-y",
+            "-loop", "1",
+            "-i", subPngPath,
+            "-t", `${subDuration}`,
+            "-c:v", "libx264",
+            "-tune", "stillimage",
+            "-vf", `scale=${reelWidth}:${reelHeight}`,
+            "-pix_fmt", "yuv420p",
+            subVidPath,
+          ]);
+          proc.on("close", (code) => {
+            if (code === 0) {
+              subVideoPaths.push(subVidPath);
+              resolve();
+            } else {
+              reject(new Error(`Scene ${i + 1} subframe ${s} render failed`));
+            }
+          });
+        });
+      }
+
+      // Concatenate the subframes into the scene's MP4
+      const subConcatPath = path.join(jobDir, `scene_${i + 1}_concat.txt`);
+      fs.writeFileSync(subConcatPath, subVideoPaths.map((p) => `file '${path.resolve(p)}'`).join("\n"), "utf-8");
 
       await new Promise<void>((resolve, reject) => {
         const proc = spawn(this.ffmpegPath, [
           "-y",
-          "-loop", "1",
-          "-i", pngPath,
-          "-t", `${duration}`,
-          "-c:v", "libx264",
-          "-tune", "stillimage",
-          "-vf", `scale=${reelWidth}:${reelHeight}`,
-          "-pix_fmt", "yuv420p",
+          "-f", "concat",
+          "-safe", "0",
+          "-i", subConcatPath,
+          "-c", "copy",
           sceneVideoPath,
         ]);
         proc.on("close", (code) => {
@@ -524,7 +656,7 @@ export class VideoRendererService {
             sceneVideoPaths.push(sceneVideoPath);
             resolve();
           } else {
-            reject(new Error(`Scene ${i + 1} render failed`));
+            reject(new Error(`Scene ${i + 1} concatenation failed`));
           }
         });
       });

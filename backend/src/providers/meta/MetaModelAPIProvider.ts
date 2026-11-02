@@ -67,9 +67,9 @@ export class MetaModelAPIProvider implements LLMProvider {
       );
 
       req.on("error", (err) => reject(err));
-      req.setTimeout(60000, () => {
+      req.setTimeout(180000, () => {
         req.destroy();
-        reject(new Error("Meta Model API request timed out after 60s"));
+        reject(new Error("Meta Model API request timed out after 180s"));
       });
 
       req.write(postData);
@@ -92,7 +92,7 @@ export class MetaModelAPIProvider implements LLMProvider {
       model: this.textModel,
       messages,
       temperature: options?.temperature ?? 0.2,
-      max_tokens: options?.maxTokens ?? 3000,
+      max_tokens: options?.maxTokens ?? 8192,
     };
 
     const data = await this.makeRequest("/chat/completions", payload);

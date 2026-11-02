@@ -93,8 +93,8 @@ export class OrchestratorAgent {
       // 5. Visual Planning (Storyboard)
       job.status = "planning";
       const injectBug = options?.testCorrectionLoop ?? true; // Injects demo discrepancy for critic to catch
-      this.addTrace(job, "Visual Planning Agent", "Generating Storyboard", "Mapping narration segments and simulation states to visual scenes", "info", "visual_scene_compiler");
-      let storyboard = this.visualPlanningAgent.planStoryboard(voicedScript, simulation, {
+      this.addTrace(job, "Visual Planning Agent", "Generating Storyboard", "Mapping narration segments and simulation states to visual scenes with AI", "info", "visual_scene_compiler");
+      let storyboard = await this.visualPlanningAgent.planStoryboard(voicedScript, simulation, {
         injectIntentionalBugForCriticDemo: injectBug && job.correctionCount === 0,
       });
       job.storyboard = storyboard;
@@ -115,7 +115,7 @@ export class OrchestratorAgent {
         this.addTrace(job, "Orchestrator Agent", "Executing Targeted Correction", `Remediating ${criticReport.issues.length} detected discrepancies. Re-generating affected scene...`, "info");
 
         // Re-generate storyboard with verified props
-        storyboard = this.visualPlanningAgent.planStoryboard(voicedScript, simulation, {
+        storyboard = await this.visualPlanningAgent.planStoryboard(voicedScript, simulation, {
           injectIntentionalBugForCriticDemo: false,
         });
         job.storyboard = storyboard;

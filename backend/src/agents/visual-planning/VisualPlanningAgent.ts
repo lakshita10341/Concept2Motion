@@ -1,16 +1,91 @@
 import { SimulationResult, Storyboard, TeachingScript, SceneVisual } from "../../shared/types/index.js";
+import { LLMProvider } from "../../providers/fireworks/FireworksLlamaProvider.js";
+
+export interface AIDiagramSpec {
+  stepNumber: number;
+  badgeText: string;
+  statusText: string;
+  metricText: string;
+  nodeA: { title: string; subtitle: string; role: string; status: string };
+  nodeB: { title: string; subtitle: string; role: string; status: string };
+  nodeC: { title: string; subtitle: string; role: string; status: string };
+  flow: { source: string; target: string; packetLabel: string; active: boolean };
+  invariant: { badge: string; rule: string };
+}
 
 export class VisualPlanningAgent {
-  planStoryboard(
+  private llm?: LLMProvider;
+
+  constructor(llm?: LLMProvider) {
+    this.llm = llm;
+  }
+
+  async planStoryboard(
     script: TeachingScript,
     simulation: SimulationResult,
     options?: { injectIntentionalBugForCriticDemo?: boolean }
-  ): Storyboard {
+  ): Promise<Storyboard> {
     const scenes: SceneVisual[] = [];
     const states = simulation.states || [];
     const algo = simulation.algorithm;
     const isBinarySearch = algo === "Binary Search";
     const isBloom = algo === "Bloom Filter";
+
+    // 1. AI-Driven Visual Scene Generation for Architectural / Protocol Topics
+    let aiDiagramSpecs: AIDiagramSpec[] = [];
+    if (!isBinarySearch && !isBloom && this.llm) {
+      try {
+        const prompt = `You are an expert Technical Diagram and Systems Architecture Animator for short-form engineering reels.
+Given this video title and narration segments, generate a custom 3-node technical architecture scene for EACH segment.
+
+Topic: "${script.title}"
+Segments:
+${script.segments.map((s, i) => `Step ${i + 1}: [${s.concept}] - "${s.narrationText}"`).join("\n")}
+
+For EVERY step (1 to ${script.segments.length}), output a strictly valid JSON array of ${script.segments.length} objects matching:
+[
+  {
+    "stepNumber": 1,
+    "badgeText": "STAGE / INTENT BADGE",
+    "statusText": "CURRENT STATUS",
+    "metricText": "REAL STAT / METRIC",
+    "nodeA": { "title": "INGRESS ACTOR", "subtitle": "ROLE / TECH", "role": "CLIENT", "status": "ACTIVE" },
+    "nodeB": { "title": "SWITCH / ENGINE", "subtitle": "ORCHESTRATOR", "role": "SWITCH", "status": "PROCESSING" },
+    "nodeC": { "title": "TARGET / STORE", "subtitle": "PERSISTENCE", "role": "STORE", "status": "STANDBY" },
+    "flow": { "source": "nodeA", "target": "nodeB", "packetLabel": "PACKET_NAME: DATA", "active": true },
+    "invariant": { "badge": "INVARIANT BADGE", "rule": "Concrete technical rule" }
+  }
+]
+Return ONLY strictly valid JSON array without markdown wrapping.`;
+
+        const response = await this.llm.generateCompletion(
+          [
+            { role: "system", content: "You are an expert technical diagram designer. Always output strictly valid JSON array." },
+            { role: "user", content: prompt }
+          ],
+          { jsonMode: true, temperature: 0.2 }
+        );
+
+        let cleaned = response.trim();
+        if (cleaned.includes("```")) {
+          const match = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+          cleaned = match ? match[1].trim() : cleaned.replace(/^```[a-zA-Z]*\n?/, "").replace(/```$/, "").trim();
+        }
+        const firstBracket = cleaned.indexOf("[");
+        const lastBracket = cleaned.lastIndexOf("]");
+        if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+          cleaned = cleaned.substring(firstBracket, lastBracket + 1);
+        }
+
+        const parsed = JSON.parse(cleaned);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          aiDiagramSpecs = parsed;
+          console.log(`[VisualPlanningAgent] AI successfully generated ${aiDiagramSpecs.length} custom scene diagrams for "${script.title}"`);
+        }
+      } catch (err: any) {
+        console.warn(`[VisualPlanningAgent] Could not generate AI diagrams for "${script.title}":`, err.message);
+      }
+    }
 
     script.segments.forEach((seg, idx) => {
       const sceneId = `scene_0${idx + 1}`;
@@ -92,12 +167,12 @@ export class VisualPlanningAgent {
           explanation: curState.description,
         };
       } else {
-        // Universal / Protocol / Architecture / Distributed / Network Topics
+        // Universal AI-Driven Architectural Diagram (No hardcoded topics)
         visualType = "diagram";
         component = "ArchitectureDiagram";
         simStateIds = [idx + 1];
 
-        const matchedSimState = states[Math.min(idx, states.length - 1)];
+        const aiSpec = aiDiagramSpecs[idx] || null;
 
         customProps = {
           algorithm: algo || "System Architecture",
@@ -107,9 +182,9 @@ export class VisualPlanningAgent {
           learningOutcome: seg.learningOutcome,
           narrationSummary: seg.narrationText.slice(0, 110) + "...",
           explanation: seg.learningOutcome,
-          simulationState: matchedSimState?.stateData || {},
           allConcepts: script.segments.map((s) => s.concept),
           allOutcomes: script.segments.map((s) => s.learningOutcome),
+          diagramSpec: aiSpec,
         };
       }
 

@@ -35,7 +35,7 @@ const tts = new EdgeTTSProvider();
 const researchAgent = new ResearchAgent(llmProvider);
 const teachingAgent = new TeachingAgent(llmProvider);
 const simulationAgent = new SimulationAgent();
-const visualPlanningAgent = new VisualPlanningAgent();
+const visualPlanningAgent = new VisualPlanningAgent(llmProvider);
 const narrationAgent = new NarrationAgent(tts);
 const criticAgent = new CriticAgent(llmProvider);
 

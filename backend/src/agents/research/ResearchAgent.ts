@@ -14,23 +14,23 @@ Conduct a rigorous, technically accurate research breakdown for the topic: "${to
 Audience Level: ${audienceLevel}.
 
 Identify:
-1. Core theoretical concepts & definitions.
-2. Common misconceptions or intuitive fallacies.
-3. Precise algorithmic / operational step-by-step breakdown.
-4. Reputable canonical references (e.g., CLRS, RFCs, IEEE, academic papers, official docs).
+1. 3 to 5 Core theoretical concepts & definitions (crisp, 1-2 punchy sentences each).
+2. 2 to 3 Common misconceptions or intuitive fallacies (1 sentence each).
+3. 4 to 6 Precise algorithmic / operational step-by-step breakdown (1-2 sentences each).
+4. 2 Reputable canonical references (e.g., CLRS, RFCs, IEEE, academic papers, official docs).
 
-Return ONLY valid JSON matching this structure:
+Return ONLY strictly valid JSON matching this schema:
 {
   "topic": "${topic}",
-  "coreConcepts": ["concept 1", "concept 2", ...],
-  "commonMisconceptions": ["misconception 1", ...],
-  "stepByStepBreakdown": ["step 1", "step 2", ...],
+  "coreConcepts": ["concept 1", "concept 2", "concept 3"],
+  "commonMisconceptions": ["misconception 1", "misconception 2"],
+  "stepByStepBreakdown": ["step 1", "step 2", "step 3", "step 4"],
   "sources": [
     {
       "title": "Reference Name",
       "url": "https://...",
       "snippet": "Short summary of verified authoritative definition",
-      "keyTakeaways": ["key takeaway 1", "key takeaway 2"]
+      "keyTakeaways": ["key takeaway 1"]
     }
   ]
 }`;
@@ -56,8 +56,12 @@ Return ONLY valid JSON matching this structure:
       }
 
       const parsed = JSON.parse(cleaned);
+      if (!parsed.coreConcepts || !Array.isArray(parsed.coreConcepts)) {
+        throw new Error("Invalid research response: missing coreConcepts array");
+      }
       return parsed;
-    } catch (err) {
+    } catch (err: any) {
+      console.warn(`[ResearchAgent] Error fetching research for "${topic}":`, err.message);
       // Deterministic authoritative fallback for binary search and other core topics
       if (topic.toLowerCase().includes("binary search")) {
         return {

@@ -20,8 +20,7 @@ async def main():
 
     comm = edge_tts.Communicate(clean_text, voice)
     
-    sentence_offset = 0.0
-    sentence_dur = 0.0
+    sentences = []
     has_audio = False
 
     with open(out_path, "wb") as f:
@@ -30,30 +29,51 @@ async def main():
                 f.write(chunk["data"])
                 has_audio = True
             elif chunk["type"] == "SentenceBoundary":
-                sentence_offset = chunk["offset"] / 10000.0  # ms
-                sentence_dur = chunk["duration"] / 10000.0   # ms
-
-    # Calculate exact duration
-    words = [w for w in clean_text.split() if w]
-    total_chars = max(1, sum(len(w) for w in words))
-    
-    # If SentenceBoundary was captured, use it; otherwise fallback to word count estimation
-    total_dur_ms = sentence_dur if sentence_dur > 500 else max(2000.0, (len(words) / 2.5) * 1000.0)
-    start_base_ms = sentence_offset if sentence_offset >= 0 else 50.0
+                sentences.append({
+                    "text": chunk.get("text", "").strip(),
+                    "offsetMs": chunk.get("offset", 0) / 10000.0,
+                    "durationMs": chunk.get("duration", 0) / 10000.0,
+                })
 
     word_timings = []
-    cur_ms = start_base_ms
 
-    for w in words:
-        w_dur = max(120.0, (len(w) / total_chars) * total_dur_ms)
-        word_timings.append({
-            "word": w,
-            "startMs": round(cur_ms, 1),
-            "endMs": round(cur_ms + w_dur, 1)
-        })
-        cur_ms += w_dur
+    if sentences:
+        for s in sentences:
+            s_text = s["text"]
+            s_words = [w for w in s_text.split() if w]
+            if not s_words:
+                continue
 
-    total_duration_sec = round((cur_ms / 1000.0), 2)
+            total_chars = max(1, sum(len(w) for w in s_words))
+            cur_ms = s["offsetMs"]
+            s_dur = max(300.0, s["durationMs"])
+
+            for w in s_words:
+                w_dur = max(90.0, (len(w) / total_chars) * s_dur)
+                word_timings.append({
+                    "word": w,
+                    "startMs": round(cur_ms, 1),
+                    "endMs": round(cur_ms + w_dur, 1)
+                })
+                cur_ms += w_dur
+        
+        last_end_ms = word_timings[-1]["endMs"] if word_timings else 2000.0
+        total_duration_sec = round((last_end_ms / 1000.0) + 0.15, 2)
+    else:
+        # Fallback if no sentence boundary events received
+        words = [w for w in clean_text.split() if w]
+        cur_ms = 80.0
+        total_chars = max(1, sum(len(w) for w in words))
+        est_total_ms = max(2000.0, (len(words) / 2.6) * 1000.0)
+        for w in words:
+            w_dur = max(100.0, (len(w) / total_chars) * est_total_ms)
+            word_timings.append({
+                "word": w,
+                "startMs": round(cur_ms, 1),
+                "endMs": round(cur_ms + w_dur, 1)
+            })
+            cur_ms += w_dur
+        total_duration_sec = round((cur_ms / 1000.0) + 0.1, 2)
 
     result = {
         "audioDurationSeconds": total_duration_sec,

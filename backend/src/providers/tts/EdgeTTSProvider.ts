@@ -29,9 +29,13 @@ export class EdgeTTSProvider implements TTSProvider {
     const backendScriptPath = path.resolve(process.cwd(), "backend/scripts/synthesize_with_words.py");
     const activeScript = fs.existsSync(scriptPath) ? scriptPath : backendScriptPath;
 
+    const venvPy = path.resolve(process.cwd(), ".venv/bin/python");
+    const backendVenvPy = path.resolve(process.cwd(), "backend/.venv/bin/python");
+    const pythonBin = fs.existsSync(venvPy) ? venvPy : fs.existsSync(backendVenvPy) ? backendVenvPy : "python3";
+
     return new Promise((resolve, reject) => {
       const cleanText = text.replace(/[*_#`]/g, "").trim();
-      const pythonProc = spawn("python3", [activeScript, cleanText, voice, outputPath]);
+      const pythonProc = spawn(pythonBin, [activeScript, cleanText, voice, outputPath]);
 
       let stdout = "";
       let stderr = "";

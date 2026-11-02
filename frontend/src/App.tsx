@@ -302,8 +302,9 @@ export default function App() {
                     className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-xs text-white focus:outline-none focus:border-emerald-500"
                   >
                     <option value={45}>45 Seconds</option>
-                    <option value={60}>60 Seconds</option>
-                    <option value={90}>90 Seconds</option>
+                    <option value={60}>60 Seconds (1 Min)</option>
+                    <option value={90}>90 Seconds (1.5 Min)</option>
+                    <option value={120}>120 Seconds (2 Min)</option>
                   </select>
                 </div>
               </div>
