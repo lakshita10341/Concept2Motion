@@ -4,3 +4,4 @@
 /backend/storage/jobs/
 .env
 /backend/.env__pycache__/
+.venv-manim

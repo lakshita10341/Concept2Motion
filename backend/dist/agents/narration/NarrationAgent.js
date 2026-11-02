@@ -14,6 +14,7 @@ export class NarrationAgent {
                 ...segment,
                 audioUrl: `/api/jobs/media/${path.basename(jobDir)}/${audioFileName}`,
                 audioDurationSeconds: res.audioDurationSeconds,
+                wordTimings: res.wordTimings || [],
             });
         }
         return {

@@ -26,6 +26,16 @@ export class VideoRendererService {
     }
   }
 
+  private getManimBinary(): string {
+    const localVenv = path.resolve(process.cwd(), "backend/.venv-manim/bin/manim");
+    if (fs.existsSync(localVenv)) return localVenv;
+    const rootVenv = path.resolve(process.cwd(), ".venv-manim/bin/manim");
+    if (fs.existsSync(rootVenv)) return rootVenv;
+    const mambaVenv = "/home/lakshita/.local/share/mamba/envs/.venv-manim/bin/manim";
+    if (fs.existsSync(mambaVenv)) return mambaVenv;
+    return "manim";
+  }
+
   private escapeXml(unsafe: string): string {
     return (unsafe || "")
       .replace(/&/g, "&amp;")
@@ -590,76 +600,146 @@ export class VideoRendererService {
       });
     });
 
-    // 2. Render timed scenes with progressive motion subframes
-    for (let i = 0; i < storyboard.scenes.length; i++) {
-      const scene = storyboard.scenes[i];
-      const segment = script.segments[i];
-      const sceneVideoPath = path.join(jobDir, `scene_${i + 1}.mp4`);
-      const duration = Math.max(2.5, segment.audioDurationSeconds || scene.durationSeconds || 4.0);
+    // 2. Render timed scenes via Manim Community (Reel-Generator-Engine Pipeline)
+    let renderedViaManim = false;
+    const manimBin = this.getManimBinary();
+    const scenesPyPath = path.join(jobDir, "scenes.py");
 
-      // Generate 2 progressive sub-phases for each scene to give motion (Initial State -> Active Pulse)
-      const subDuration = duration / 2;
-      const subVideoPaths: string[] = [];
+    if (storyboard.manimScript) {
+      try {
+        fs.writeFileSync(scenesPyPath, storyboard.manimScript, "utf-8");
+        const sceneMatches = [...storyboard.manimScript.matchAll(/class\s+(Scene\w+)\s*\(/g)];
+        const sceneClassNames = sceneMatches.map((m) => m[1]);
 
-      for (let s = 0; s < 2; s++) {
-        const subPngPath = path.join(jobDir, `scene_${i + 1}_sub_${s}.png`);
-        const subVidPath = path.join(jobDir, `scene_${i + 1}_sub_${s}.mp4`);
-        const svgContent = this.generateSceneSVG(scene, i, reelWidth, reelHeight, s);
+        if (sceneClassNames.length > 0 && fs.existsSync(manimBin)) {
+          console.log(`[VideoRendererService] Rendering ${sceneClassNames.length} scenes via Manim (${manimBin})...`);
+          const mediaDir = path.join(jobDir, "manim_media");
 
-        const resvg = new Resvg(svgContent, {
-          fitTo: { mode: "width", value: reelWidth },
-          font: {
-            loadSystemFonts: true,
-            defaultFontFamily: "DejaVu Sans",
-          },
-        });
-        fs.writeFileSync(subPngPath, resvg.render().asPng());
+          await new Promise<void>((resolve, reject) => {
+            const proc = spawn(manimBin, [
+              "-qh",
+              "--format", "mp4",
+              scenesPyPath,
+              ...sceneClassNames,
+              "--media_dir", mediaDir,
+            ]);
+            proc.stdout.on("data", (d) => console.log(`[Manim] ${d.toString().trim()}`));
+            proc.stderr.on("data", (d) => console.warn(`[Manim] ${d.toString().trim()}`));
+            proc.on("close", (code) => {
+              if (code === 0) resolve();
+              else reject(new Error(`Manim render failed with code ${code}`));
+            });
+          });
+
+          // Verify all rendered scene MP4s exist
+          const manimClips: string[] = [];
+          for (const scName of sceneClassNames) {
+            const searchFile = (dir: string): string | null => {
+              if (!fs.existsSync(dir)) return null;
+              const files = fs.readdirSync(dir);
+              for (const f of files) {
+                const full = path.join(dir, f);
+                if (fs.statSync(full).isDirectory()) {
+                  const res = searchFile(full);
+                  if (res) return res;
+                } else if (f === `${scName}.mp4`) {
+                  return full;
+                }
+              }
+              return null;
+            };
+
+            const foundClip = searchFile(mediaDir);
+            if (foundClip) {
+              manimClips.push(foundClip);
+            } else {
+              throw new Error(`Rendered clip for ${scName} not found in Manim media directory`);
+            }
+          }
+
+          if (manimClips.length === sceneClassNames.length) {
+            sceneVideoPaths.push(...manimClips);
+            renderedViaManim = true;
+            console.log(`[VideoRendererService] Successfully rendered all ${manimClips.length} scenes with Manim!`);
+          }
+        }
+      } catch (err: any) {
+        console.warn(`[VideoRendererService] Manim rendering failed, falling back to SVG pipeline:`, err.message);
+        sceneVideoPaths.length = 0;
+      }
+    }
+
+    // Fallback: Render timed scenes with progressive motion subframes if Manim wasn't used
+    if (!renderedViaManim) {
+      console.log(`[VideoRendererService] Rendering scenes via SVG progressive pipeline...`);
+      for (let i = 0; i < storyboard.scenes.length; i++) {
+        const scene = storyboard.scenes[i];
+        const segment = script.segments[i];
+        const sceneVideoPath = path.join(jobDir, `scene_${i + 1}.mp4`);
+        const duration = Math.max(2.5, segment.audioDurationSeconds || scene.durationSeconds || 4.0);
+
+        const subDuration = duration / 2;
+        const subVideoPaths: string[] = [];
+
+        for (let s = 0; s < 2; s++) {
+          const subPngPath = path.join(jobDir, `scene_${i + 1}_sub_${s}.png`);
+          const subVidPath = path.join(jobDir, `scene_${i + 1}_sub_${s}.mp4`);
+          const svgContent = this.generateSceneSVG(scene, i, reelWidth, reelHeight, s);
+
+          const resvg = new Resvg(svgContent, {
+            fitTo: { mode: "width", value: reelWidth },
+            font: {
+              loadSystemFonts: true,
+              defaultFontFamily: "DejaVu Sans",
+            },
+          });
+          fs.writeFileSync(subPngPath, resvg.render().asPng());
+
+          await new Promise<void>((resolve, reject) => {
+            const proc = spawn(this.ffmpegPath, [
+              "-y",
+              "-loop", "1",
+              "-i", subPngPath,
+              "-t", `${subDuration}`,
+              "-c:v", "libx264",
+              "-tune", "stillimage",
+              "-vf", `scale=${reelWidth}:${reelHeight}`,
+              "-pix_fmt", "yuv420p",
+              subVidPath,
+            ]);
+            proc.on("close", (code) => {
+              if (code === 0) {
+                subVideoPaths.push(subVidPath);
+                resolve();
+              } else {
+                reject(new Error(`Scene ${i + 1} subframe ${s} render failed`));
+              }
+            });
+          });
+        }
+
+        const subConcatPath = path.join(jobDir, `scene_${i + 1}_concat.txt`);
+        fs.writeFileSync(subConcatPath, subVideoPaths.map((p) => `file '${path.resolve(p)}'`).join("\n"), "utf-8");
 
         await new Promise<void>((resolve, reject) => {
           const proc = spawn(this.ffmpegPath, [
             "-y",
-            "-loop", "1",
-            "-i", subPngPath,
-            "-t", `${subDuration}`,
-            "-c:v", "libx264",
-            "-tune", "stillimage",
-            "-vf", `scale=${reelWidth}:${reelHeight}`,
-            "-pix_fmt", "yuv420p",
-            subVidPath,
+            "-f", "concat",
+            "-safe", "0",
+            "-i", subConcatPath,
+            "-c", "copy",
+            sceneVideoPath,
           ]);
           proc.on("close", (code) => {
             if (code === 0) {
-              subVideoPaths.push(subVidPath);
+              sceneVideoPaths.push(sceneVideoPath);
               resolve();
             } else {
-              reject(new Error(`Scene ${i + 1} subframe ${s} render failed`));
+              reject(new Error(`Scene ${i + 1} concatenation failed`));
             }
           });
         });
       }
-
-      // Concatenate the subframes into the scene's MP4
-      const subConcatPath = path.join(jobDir, `scene_${i + 1}_concat.txt`);
-      fs.writeFileSync(subConcatPath, subVideoPaths.map((p) => `file '${path.resolve(p)}'`).join("\n"), "utf-8");
-
-      await new Promise<void>((resolve, reject) => {
-        const proc = spawn(this.ffmpegPath, [
-          "-y",
-          "-f", "concat",
-          "-safe", "0",
-          "-i", subConcatPath,
-          "-c", "copy",
-          sceneVideoPath,
-        ]);
-        proc.on("close", (code) => {
-          if (code === 0) {
-            sceneVideoPaths.push(sceneVideoPath);
-            resolve();
-          } else {
-            reject(new Error(`Scene ${i + 1} concatenation failed`));
-          }
-        });
-      });
     }
 
     // 3. Concatenate scene clips
@@ -684,12 +764,19 @@ export class VideoRendererService {
 
     // 4. Generate high-retention karaoke caption timeline via caption_overlay
     const captionsDir = path.join(jobDir, "captions");
-    const assetPath = path.resolve(process.cwd(), "assets/asset.png");
+    let assetPath = path.resolve(process.cwd(), "assets/asset.png");
+    if (!fs.existsSync(assetPath)) {
+      assetPath = path.resolve(process.cwd(), "backend/assets/asset.png");
+    }
+
     let captionConcatFile: string | null = null;
     let captionY = 1161;
 
     try {
-      const pyScript = path.resolve(process.cwd(), "scripts/render_captions.py");
+      let pyScript = path.resolve(process.cwd(), "scripts/render_captions.py");
+      if (!fs.existsSync(pyScript)) {
+        pyScript = path.resolve(process.cwd(), "backend/scripts/render_captions.py");
+      }
       const pyProc = spawn("python3", [pyScript, captionsJsonPath, captionsDir, assetPath]);
       let pyOutput = "";
       pyProc.stdout.on("data", (d) => (pyOutput += d.toString()));
