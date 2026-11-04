@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { Resvg } from "@resvg/resvg-js";
 import { VisualPlanningAgent } from "../agents/visual-planning/VisualPlanningAgent.js";
+import { AvatarService } from "./AvatarService.js";
 export class VideoRendererService {
     ffmpegPath;
     constructor() {
@@ -765,10 +766,11 @@ export class VideoRendererService {
         });
         // 4. Generate high-retention karaoke caption timeline via caption_overlay
         const captionsDir = path.join(jobDir, "captions");
-        let assetPath = path.resolve(process.cwd(), "assets/asset.png");
-        if (!fs.existsSync(assetPath)) {
-            assetPath = path.resolve(process.cwd(), "backend/assets/asset.png");
-        }
+        const selectedAvatar = storyboard?.avatar?.id
+            ? AvatarService.getAvatarById(storyboard.avatar.id)
+            : AvatarService.selectAvatarForTopic(script.title, script.targetAudience);
+        const assetPath = AvatarService.getAvatarPath(selectedAvatar.id);
+        console.log(`[VideoRenderer] Using topic avatar "${selectedAvatar.name}" (${selectedAvatar.id}) from ${assetPath}`);
         let captionConcatFile = null;
         let captionY = 1161;
         try {

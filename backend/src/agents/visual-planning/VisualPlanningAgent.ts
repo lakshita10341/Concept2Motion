@@ -1,6 +1,7 @@
 import { SimulationResult, Storyboard, TeachingScript, SceneVisual } from "../../shared/types/index.js";
 import { LLMProvider } from "../../providers/fireworks/FireworksLlamaProvider.js";
 import { spawnSync } from "child_process";
+import { AvatarService } from "../../services/AvatarService.js";
 
 export class VisualPlanningAgent {
   private llm?: LLMProvider;
@@ -253,63 +254,105 @@ config.background_color = "#07090E"
     options?: { injectIntentionalBugForCriticDemo?: boolean }
   ): Promise<Storyboard> {
     const scenes: SceneVisual[] = [];
-    let manimScript: string | undefined = undefined;
+    const header = `from manim import *
+from manim.utils.rate_functions import ease_out_cubic
 
-    // 1. Generate AI-driven Manim scenes code via LLM if available
+if config.pixel_width > config.pixel_height:
+    config.pixel_width, config.pixel_height = config.pixel_height, config.pixel_width
+config.frame_width = 9.0
+config.frame_height = 16.0
+config.background_color = "#07090E"
+`;
+
+    // 1. Select best-fitting avatar for the topic (Staff Architect is the default, never Peter)
+    const avatar = AvatarService.selectAvatarForTopic(script.title, script.targetAudience);
+    console.log(`[VisualPlanningAgent] Topic "${script.title}" -> Selected Avatar: ${avatar.name} (${avatar.id})`);
+
+    // 2. Generate Manim scene classes per segment for targeted narrative relevance
+    const sceneClasses: string[] = [];
+
     if (this.llm) {
-      try {
-        const prompt = `You are an expert Manim animator creating short-form 9:16 vertical engineering video reels.
-Write a valid Python Manim script that visualizes the following technical topic.
+      console.log(`[VisualPlanningAgent] Generating topic-specific Manim scenes per segment for "${script.title}"...`);
+      const scenePromises = script.segments.map(async (seg, idx) => {
+        const sceneNum = String(idx + 1).padStart(2, "0");
+        const safeConcept = seg.concept.replace(/[^a-zA-Z0-9]/g, "") || `Beat${sceneNum}`;
+        const className = `Scene${sceneNum}_${safeConcept}`;
+        const duration = Math.max(3.0, seg.audioDurationSeconds || 8.0);
+
+        try {
+          const prompt = `You are an expert Manim animator creating short-form 9:16 vertical engineering video reels.
+Create a Python Manim Scene class specifically visualizing this step.
 
 Topic: "${script.title}"
-Segments with durations:
-${script.segments.map((s, i) => `Step ${i + 1}: [${s.concept}] (${(s.audioDurationSeconds || 8.0).toFixed(1)}s) - "${s.narrationText}"`).join("\n")}
+Step ${idx + 1}: "${seg.concept}"
+Duration: ${duration.toFixed(1)} seconds
+Narration: "${seg.narrationText}"
 
-STRICT ANTI-AI-SLOP & TOKEN CONSTRAINTS:
-1. Output Python code with classes Scene01_..., Scene02_..., etc. (one class per step).
-2. KEEP EACH SCENE CLASS SHORT & CONCISE (15-20 lines of code maximum).
-   - Use 2-3 key Mobjects (Circle, Square, Line, Arrow).
-   - Use 1-2 focused animations: Create, MoveAlongPath(Dot, Line), or Transform.
-   - Do NOT write loops with many objects or verbose boilerplate to prevent output truncation!
-3. 9:16 vertical geometry:
-   - Upper 2/3 active zone: x in [-3.9, 3.9], y in [-1.6, 6.6].
-   - Lower third (y < -1.8) MUST REMAIN PITCH BLACK for the character overlay.
-4. Canvas: background="#07090E", typography font="DejaVu Sans Mono", palette: 60% slate ("#07090E"), 30% structural ("#1E293B", "#334155", "#94A3B8"), 10% accent ("#0EA5E9" or "#F59E0B").
-5. Exact Timing: Each scene's animation run_times + self.wait(pad) MUST EQUAL the step's audio duration in seconds.
+STRICT RULES:
+1. Class name MUST be: class ${className}(Scene):
+2. Do NOT include "from manim import *" or configuration lines. Output ONLY the class definition.
+3. Canvas & Geometry (9:16 vertical):
+   - Upper 2/3 active zone: x in [-3.8, 3.8], y in [-1.4, 5.8].
+   - Lower third (y < -1.8) MUST REMAIN PITCH BLACK for the avatar overlay.
+4. Visual Design:
+   - Create diagrams, nodes, labels, and motion specifically representing the narration concept.
+   - Use standard Manim objects: Text, Circle, Square, RoundedRectangle, Line, Arrow, Dot.
+   - font="DejaVu Sans Mono".
+   - Colors: #0EA5E9 (Cyan), #10B981 (Green), #F59E0B (Amber), #EF4444 (Red), #94A3B8 (Muted), #1E293B (Dark), #334155 (Border).
+5. Timing: Total duration is ${duration.toFixed(1)}s.
+   - Animations + self.wait(pad) MUST sum to ${duration.toFixed(1)}s.
 6. NO LaTeX or MathTex. Use Text(...) only.
+7. Output ONLY valid Python code starting with "class ${className}(Scene):". No markdown ticks or explanation.`;
 
-Output ONLY executable Python code starting with "from manim import *" without markdown ticks or explanation.`;
+          const response = await this.llm!.generateCompletion(
+            [
+              { role: "system", content: "You are an expert Manim animator. Always output clean, valid Python code." },
+              { role: "user", content: prompt }
+            ],
+            { temperature: 0.2 }
+          );
 
-        const response = await this.llm.generateCompletion(
-          [
-            { role: "system", content: "You are an expert Manim animator. Always output concise, clean Python code for Manim Community that never truncates." },
-            { role: "user", content: prompt }
-          ],
-          { temperature: 0.2 }
-        );
+          let cleaned = response.trim();
+          if (cleaned.includes("```")) {
+            const match = cleaned.match(/```(?:python)?\s*([\s\S]*?)\s*```/);
+            cleaned = match ? match[1].trim() : cleaned.replace(/^```[a-zA-Z]*\n?/, "").replace(/```$/, "").trim();
+          }
 
-        let cleaned = response.trim();
-        if (cleaned.includes("```")) {
-          const match = cleaned.match(/```(?:python)?\s*([\s\S]*?)\s*```/);
-          cleaned = match ? match[1].trim() : cleaned.replace(/^```[a-zA-Z]*\n?/, "").replace(/```$/, "").trim();
+          // Test syntax of this single scene class
+          const testScript = `${header}\n${cleaned}\n`;
+          const testRes = spawnSync("python3", ["-c", "import ast, sys; ast.parse(sys.stdin.read())"], {
+            input: testScript,
+            encoding: "utf-8",
+            timeout: 2500,
+          });
+
+          if (testRes.status === 0 && cleaned.includes(`class ${className}`) && cleaned.includes("def construct")) {
+            console.log(`[VisualPlanningAgent] Scene ${sceneNum} (${className}) generated & verified.`);
+            return cleaned;
+          } else {
+            console.warn(`[VisualPlanningAgent] Scene ${sceneNum} AI syntax check failed. Using procedural fallback.`);
+            return this.generateSingleProceduralScene(seg, idx, sceneNum);
+          }
+        } catch (err: any) {
+          console.warn(`[VisualPlanningAgent] Scene ${sceneNum} generation failed: ${err.message}. Using procedural fallback.`);
+          return this.generateSingleProceduralScene(seg, idx, sceneNum);
         }
+      });
 
-        // Validate complete script
-        if (this.validateManimScript(cleaned, script.segments.length)) {
-          manimScript = cleaned;
-          console.log(`[VisualPlanningAgent] AI Manim script fully verified (${script.segments.length} scenes).`);
-        } else if (cleaned.includes("class Scene01")) {
-          console.log(`[VisualPlanningAgent] AI Manim script was partially generated or truncated. Salvaging complete scenes and repairing...`);
-          manimScript = this.repairManimScript(cleaned, script);
-        }
-      } catch (err: any) {
-        console.warn(`[VisualPlanningAgent] AI Manim generation failed for "${script.title}":`, err.message);
-      }
+      const generated = await Promise.all(scenePromises);
+      sceneClasses.push(...generated);
+    } else {
+      script.segments.forEach((seg, idx) => {
+        const sceneNum = String(idx + 1).padStart(2, "0");
+        sceneClasses.push(this.generateSingleProceduralScene(seg, idx, sceneNum));
+      });
     }
 
-    // 2. Fallback to 100% verified procedural Manim script if needed
-    if (!manimScript || !this.validateManimScript(manimScript, script.segments.length)) {
-      console.log(`[VisualPlanningAgent] Using 100% verified procedural Manim engine for "${script.title}"`);
+    let manimScript = `${header}\n${sceneClasses.join("\n\n")}\n`;
+
+    // Final verification of full assembled script
+    if (!this.validateManimScript(manimScript, script.segments.length)) {
+      console.warn(`[VisualPlanningAgent] Assembled script validation failed. Reverting to full procedural engine.`);
       manimScript = this.generateProceduralManimScript(script);
     }
 
@@ -345,6 +388,10 @@ Output ONLY executable Python code starting with "from manim import *" without m
       totalDurationSeconds,
       scenes,
       manimScript,
+      avatar: {
+        id: avatar.id,
+        name: avatar.name,
+      },
     };
   }
 }

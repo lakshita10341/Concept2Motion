@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000">
+  <defs>
+    <linearGradient id="hoodieGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="visorGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0284C7"/>
+      <stop offset="50%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+    <filter id="cyanGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Torso / Shoulders -->
+  <path d="M 120 1000 C 130 760, 240 680, 400 680 C 560 680, 670 760, 680 1000 Z" fill="url(#hoodieGrad)" stroke="#334155" stroke-width="4"/>
+  <!-- Hoodie Zipper / Seam Line -->
+  <line x1="400" y1="680" x2="400" y2="1000" stroke="#0EA5E9" stroke-width="3" stroke-dasharray="8 6"/>
+
+  <!-- Hoodie Outer Hood -->
+  <path d="M 230 680 C 210 500, 230 310, 400 310 C 570 310, 590 500, 570 680 C 510 710, 480 720, 400 720 C 320 720, 290 710, 230 680 Z" fill="#090D16" stroke="#334155" stroke-width="4"/>
+
+  <!-- Inner Hood Shadow -->
+  <ellipse cx="400" cy="520" rx="145" ry="175" fill="#030712"/>
+
+  <!-- Face Silhouette -->
+  <path d="M 310 490 C 310 590, 350 630, 400 630 C 450 630, 490 590, 490 490 C 490 430, 450 410, 400 410 C 350 410, 310 430, 310 490 Z" fill="#1E293B"/>
+
+  <!-- Cyber Visor / Glasses with Cyan Glow -->
+  <g filter="url(#cyanGlow)">
+    <polygon points="315,480 485,480 470,525 330,525" fill="url(#visorGrad)" stroke="#E0F2FE" stroke-width="2.5"/>
+    <!-- Tech Scanline across Visor -->
+    <line x1="325" y1="500" x2="475" y2="500" stroke="#FFFFFF" stroke-width="2" opacity="0.8"/>
+    <circle cx="340" cy="495" r="3" fill="#FFFFFF"/>
+    <circle cx="460" cy="495" r="3" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Neck Collar Accent -->
+  <path d="M 340 680 L 400 720 L 460 680" fill="none" stroke="#0EA5E9" stroke-width="3"/>
+</svg>

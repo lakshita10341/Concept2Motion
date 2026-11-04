@@ -102,6 +102,10 @@ export const StoryboardSchema = z.object({
   totalDurationSeconds: z.number(),
   scenes: z.array(SceneVisualSchema),
   manimScript: z.string().optional(),
+  avatar: z.object({
+    id: z.string(),
+    name: z.string(),
+  }).optional(),
 });
 
 export type Storyboard = z.infer<typeof StoryboardSchema>;
