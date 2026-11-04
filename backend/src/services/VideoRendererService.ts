@@ -557,7 +557,13 @@ export class VideoRendererService {
         audioConcatContent += `file '${path.resolve(segAudioPath)}'\n`;
       }
 
-      const words = (seg.wordTimings || []).map((wt) => {
+      const activeWordTimings = (seg.displayWordTimings && seg.displayWordTimings.length > 0)
+        ? seg.displayWordTimings
+        : (seg.wordTimings || []);
+
+      const activeNarrationText = seg.captionText || seg.narrationText;
+
+      const words = activeWordTimings.map((wt) => {
         const wStart = segStartSec + wt.startMs / 1000.0;
         const wEnd = segStartSec + wt.endMs / 1000.0;
         return {
@@ -571,7 +577,7 @@ export class VideoRendererService {
         id: i,
         start: Math.round(segStartSec * 100) / 100,
         end: Math.round(segEndSec * 100) / 100,
-        text: seg.narrationText,
+        text: activeNarrationText,
         words,
       });
 

@@ -49,6 +49,8 @@ export type WordTiming = z.infer<typeof WordTimingSchema>;
 export const NarrationSegmentSchema = z.object({
   segmentId: z.string(),
   narrationText: z.string(),
+  captionText: z.string().optional(),
+  displayWordTimings: z.array(WordTimingSchema).optional(),
   concept: z.string(),
   learningOutcome: z.string(),
   audioUrl: z.string().optional(),

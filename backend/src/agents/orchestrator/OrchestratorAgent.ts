@@ -4,6 +4,7 @@ import { TeachingAgent } from "../teaching/TeachingAgent.js";
 import { SimulationAgent } from "../simulation/SimulationAgent.js";
 import { VisualPlanningAgent } from "../visual-planning/VisualPlanningAgent.js";
 import { NarrationAgent } from "../narration/NarrationAgent.js";
+import { CaptionVerificationAgent } from "../caption/CaptionVerificationAgent.js";
 import { CriticAgent } from "../critic/CriticAgent.js";
 import { VideoRendererService } from "../../services/VideoRendererService.js";
 import { JobStore } from "../../services/JobStore.js";
@@ -16,6 +17,7 @@ export class OrchestratorAgent {
   private simulationAgent: SimulationAgent;
   private visualPlanningAgent: VisualPlanningAgent;
   private narrationAgent: NarrationAgent;
+  private captionVerificationAgent: CaptionVerificationAgent;
   private criticAgent: CriticAgent;
   private renderer: VideoRendererService;
 
@@ -26,7 +28,8 @@ export class OrchestratorAgent {
     simulationAgent: SimulationAgent,
     visualPlanningAgent: VisualPlanningAgent,
     narrationAgent: NarrationAgent,
-    criticAgent: CriticAgent
+    criticAgent: CriticAgent,
+    captionVerificationAgent?: CaptionVerificationAgent
   ) {
     this.safetyGuardrailAgent = safetyGuardrailAgent;
     this.researchAgent = researchAgent;
@@ -35,6 +38,7 @@ export class OrchestratorAgent {
     this.visualPlanningAgent = visualPlanningAgent;
     this.narrationAgent = narrationAgent;
     this.criticAgent = criticAgent;
+    this.captionVerificationAgent = captionVerificationAgent || new CaptionVerificationAgent(researchAgent["llm"]);
     this.renderer = new VideoRendererService();
   }
 
@@ -112,11 +116,17 @@ export class OrchestratorAgent {
       this.addTrace(job, "Simulation Agent", "States Captured", `Extracted ${simulation.states.length} verified algorithmic execution states`, "success");
       this.addTrace(job, "Narration Agent", "Audio Ready", `Generated ${voicedScript.segments.length} synchronized speech tracks in parallel`, "success");
 
+      // 4.5 Caption Verification & Normalization (Meta AI Subtitle Engine)
+      this.addTrace(job, "Caption Verification Agent", "Sanitizing Subtitles", "Refining phonetic audio text into technically precise display captions with Meta AI", "info", "meta_caption_verifier");
+      const verifiedScript = await this.captionVerificationAgent.verifyAndCleanCaptions(voicedScript);
+      job.script = verifiedScript;
+      this.addTrace(job, "Caption Verification Agent", "Subtitles Verified", `Verified on-screen captions across ${verifiedScript.segments.length} segments (fixed domain notations, acronyms, and units)`, "success");
+
       // 5. Visual Planning (Storyboard)
       job.status = "planning";
       const injectBug = options?.testCorrectionLoop ?? true; // Injects demo discrepancy for critic to catch
       this.addTrace(job, "Visual Planning Agent", "Generating Storyboard", "Mapping narration segments and simulation states to visual scenes with AI", "info", "visual_scene_compiler");
-      let storyboard = await this.visualPlanningAgent.planStoryboard(voicedScript, simulation, {
+      let storyboard = await this.visualPlanningAgent.planStoryboard(verifiedScript, simulation, {
         injectIntentionalBugForCriticDemo: injectBug && job.correctionCount === 0,
       });
       job.storyboard = storyboard;
@@ -125,7 +135,7 @@ export class OrchestratorAgent {
       // 6. Critic & Verification Loop (Meta Open-Weight Model + Deterministic Rules)
       job.status = "critiquing";
       this.addTrace(job, "Critic Agent", "Auditing Artifacts", "Reviewing algorithmic invariants, audio-visual sync, and visual props with Meta AI", "info", "meta_critic_audit");
-      const criticReport = await this.criticAgent.verifyArtifacts(voicedScript, simulation, storyboard);
+      const criticReport = await this.criticAgent.verifyArtifacts(verifiedScript, simulation, storyboard);
       job.criticReports.push(criticReport);
 
       if (criticReport.status === "needs_revision") {
@@ -137,14 +147,14 @@ export class OrchestratorAgent {
         this.addTrace(job, "Orchestrator Agent", "Executing Targeted Correction", `Remediating ${criticReport.issues.length} detected discrepancies. Re-generating affected scene...`, "info");
 
         // Re-generate storyboard with verified props
-        storyboard = await this.visualPlanningAgent.planStoryboard(voicedScript, simulation, {
+        storyboard = await this.visualPlanningAgent.planStoryboard(verifiedScript, simulation, {
           injectIntentionalBugForCriticDemo: false,
         });
         job.storyboard = storyboard;
 
         // Re-verify with critic
         this.addTrace(job, "Critic Agent", "Re-evaluating Corrected Scene", "Re-checking invariant alignment after targeted regeneration", "info");
-        const recheckReport = await this.criticAgent.verifyArtifacts(voicedScript, simulation, storyboard);
+        const recheckReport = await this.criticAgent.verifyArtifacts(verifiedScript, simulation, storyboard);
         job.criticReports.push(recheckReport);
         this.addTrace(job, "Critic Agent", "Verification Passed", `Score: ${recheckReport.score}/100. Invariants, mid calculations, and intervals strictly match simulation trace.`, "success");
       } else {

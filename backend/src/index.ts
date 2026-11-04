@@ -13,6 +13,7 @@ import { TeachingAgent } from "./agents/teaching/TeachingAgent.js";
 import { SimulationAgent } from "./agents/simulation/SimulationAgent.js";
 import { VisualPlanningAgent } from "./agents/visual-planning/VisualPlanningAgent.js";
 import { NarrationAgent } from "./agents/narration/NarrationAgent.js";
+import { CaptionVerificationAgent } from "./agents/caption/CaptionVerificationAgent.js";
 import { CriticAgent } from "./agents/critic/CriticAgent.js";
 import { OrchestratorAgent } from "./agents/orchestrator/OrchestratorAgent.js";
 import { JobStore } from "./services/JobStore.js";
@@ -42,6 +43,7 @@ const teachingAgent = new TeachingAgent(llmProvider);
 const simulationAgent = new SimulationAgent();
 const visualPlanningAgent = new VisualPlanningAgent(llmProvider);
 const narrationAgent = new NarrationAgent(tts);
+const captionVerificationAgent = new CaptionVerificationAgent(llmProvider);
 const criticAgent = new CriticAgent(llmProvider);
 
 const orchestrator = new OrchestratorAgent(
@@ -51,7 +53,8 @@ const orchestrator = new OrchestratorAgent(
   simulationAgent,
   visualPlanningAgent,
   narrationAgent,
-  criticAgent
+  criticAgent,
+  captionVerificationAgent
 );
 
 // Health check with active provider diagnostics

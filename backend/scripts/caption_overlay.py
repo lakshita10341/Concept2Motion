@@ -79,6 +79,68 @@ def load_words(captions_json_path: str) -> Tuple[float, List[WordItem]]:
 
     # Sort and validate word progression
     all_words.sort(key=lambda x: x.start)
+
+    # Post-process word tokens: merge phonetic artifacts (e.g. "example dot com" -> "example.com", "dee-en-ess" -> "DNS")
+    normalized_words: List[WordItem] = []
+    i = 0
+    tlds = {"com", "org", "net", "io", "dev", "edu", "gov", "ai", "co"}
+    preps = {"in", "to", "the", "at", "for", "on", "from", "into", "with", "and", "or", "by", "as", "bug", "hit"}
+    single_map = {
+        "dee-en-ess": "DNS", "tee-ell-dee": "TLD", "eye-pee": "IP",
+        "tee-see-pee": "TCP", "tee-tee-ell": "TTL", "o-see-ess-pee": "OCSP",
+        "you-tube": "YouTube", "kilo-bytes": "KB", "mega-bytes": "MB"
+    }
+
+    while i < len(all_words):
+        w_cur = all_words[i].word
+        w_clean = w_cur.strip(".,;:?!\"'").lower()
+
+        # 3-word domain: <prefix> dot <tld>
+        if i + 2 < len(all_words):
+            w_next = all_words[i+1].word.strip(".,;:?!\"'").lower()
+            w_after = all_words[i+2].word.strip(".,;:?!\"'").lower()
+            if w_next == "dot" and w_after in tlds and w_clean not in preps:
+                pfx = all_words[i].word.strip(".,;:?!\"'")
+                if pfx.lower() == "you-tube": pfx = "YouTube"
+                trail = ""
+                for c in reversed(all_words[i+2].word):
+                    if c in ".,;:?!\"'": trail = c + trail
+                    else: break
+                normalized_words.append(WordItem(word=f"{pfx}.{w_after}{trail}", start=all_words[i].start, end=all_words[i+2].end))
+                i += 3
+                continue
+
+        # 2-word domain: dot <tld>
+        if i + 1 < len(all_words):
+            w_next = all_words[i+1].word.strip(".,;:?!\"'").lower()
+            if w_clean == "dot" and w_next in tlds:
+                trail = ""
+                for c in reversed(all_words[i+1].word):
+                    if c in ".,;:?!\"'": trail = c + trail
+                    else: break
+                normalized_words.append(WordItem(word=f".{w_next}{trail}", start=all_words[i].start, end=all_words[i+1].end))
+                i += 2
+                continue
+
+        # Single word map
+        if w_clean in single_map:
+            rep = single_map[w_clean]
+            trail = ""
+            for c in reversed(w_cur):
+                if c in ".,;:?!\"'": trail = c + trail
+                else: break
+            lead = ""
+            for c in w_cur:
+                if c in ".,;:?!\"'": lead += c
+                else: break
+            normalized_words.append(WordItem(word=f"{lead}{rep}{trail}", start=all_words[i].start, end=all_words[i].end))
+            i += 1
+            continue
+
+        normalized_words.append(all_words[i])
+        i += 1
+
+    all_words = normalized_words
     if not total_duration and all_words:
         total_duration = all_words[-1].end + 0.5
 
