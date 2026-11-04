@@ -15,6 +15,26 @@ export class NarrationAgent {
     voice = "en-US-GuyNeural",
     referenceAudioPath?: string
   ): Promise<TeachingScript> {
+    // If running local GPU voice cloning (XTTS-v2), process sequentially to avoid VRAM collision on 4GB GPU
+    if (referenceAudioPath) {
+      const updatedSegments = [];
+      for (const segment of script.segments) {
+        const audioFileName = `${segment.segmentId}.mp3`;
+        const audioPath = path.join(jobDir, audioFileName);
+        const res = await this.tts.synthesizeSpeech(segment.narrationText, audioPath, voice, referenceAudioPath);
+        updatedSegments.push({
+          ...segment,
+          audioUrl: `/api/jobs/media/${path.basename(jobDir)}/${audioFileName}`,
+          audioDurationSeconds: res.audioDurationSeconds,
+          wordTimings: res.wordTimings || [],
+        });
+      }
+      return {
+        ...script,
+        segments: updatedSegments,
+      };
+    }
+
     const updatedSegments = await Promise.all(
       script.segments.map(async (segment) => {
         const audioFileName = `${segment.segmentId}.mp3`;
@@ -41,11 +61,12 @@ export class NarrationAgent {
     segmentId: string,
     narrationText: string,
     jobDir: string,
-    voice = "en-US-GuyNeural"
+    voice = "en-US-GuyNeural",
+    referenceAudioPath?: string
   ): Promise<{ audioUrl: string; audioDurationSeconds: number }> {
     const audioFileName = `${segmentId}.mp3`;
     const audioPath = path.join(jobDir, audioFileName);
-    const res = await this.tts.synthesizeSpeech(narrationText, audioPath, voice);
+    const res = await this.tts.synthesizeSpeech(narrationText, audioPath, voice, referenceAudioPath);
 
     return {
       audioUrl: `/api/jobs/media/${path.basename(jobDir)}/${audioFileName}`,
