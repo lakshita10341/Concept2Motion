@@ -436,13 +436,18 @@ def compute_caption_vertical_offset(
         with Image.open(asset_path) as _img:
             orig_w, orig_h = _img.size
         scale_factor = canvas_width / 1080.0
-        target_w = max(10, int(orig_w * (asset_scale / 100.0) * scale_factor))
+        # Bounded scaling: max width 380px, max height 450px (strictly <= 23.4% of frame)
+        max_w = int(380 * scale_factor)
+        max_h = int(450 * (canvas_height / 1920.0))
+        scale = min(max_w / orig_w, max_h / orig_h)
+        target_w = max(10, int(orig_w * scale))
         target_w -= (target_w % 2)
-        target_h = int(orig_h * (target_w / orig_w))
+        target_h = max(10, int(orig_h * scale))
+        target_h -= (target_h % 2)
         # In pipeline.py: y = main_h - overlay_h - (main_h * asset_bottom_margin / 100)
         asset_top_y = canvas_height - target_h - int(canvas_height * asset_bottom_margin / 100.0)
         caption_y = asset_top_y - strip_height - safety_clearance
-        return max(0, caption_y)
+        return max(int(canvas_height * 0.65), min(int(canvas_height * 0.78), caption_y))
     else:
         # Default positioning in lower safe area
         return canvas_height - strip_height - int(420 * (canvas_height / 1920.0))

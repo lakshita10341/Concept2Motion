@@ -878,8 +878,10 @@ export class VideoRendererService {
       let curV = "[0:v]";
 
       if (hasAsset && assetInputIdx !== -1) {
-        // Asset width: 45% of frame (approx 486px)
-        filters.push(`[${assetInputIdx}:v]scale=486:-2[scaled_asset]`);
+        // Constrain avatar strictly to bottom corner: max width 380px, max height 450px (<= 23.4% of frame)
+        filters.push(
+          `[${assetInputIdx}:v]scale=w=380:h=450:force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2[scaled_asset]`
+        );
         filters.push(`${curV}[scaled_asset]overlay=x=main_w*0.048:y=main_h-overlay_h-(main_h*-0.016)[v_asset]`);
         curV = "[v_asset]";
       }
