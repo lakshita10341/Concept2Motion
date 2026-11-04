@@ -2,6 +2,7 @@ import { spawn } from "child_process";
 import fs from "fs";
 import path from "path";
 import { Resvg } from "@resvg/resvg-js";
+import { VisualPlanningAgent } from "../agents/visual-planning/VisualPlanningAgent.js";
 export class VideoRendererService {
     ffmpegPath;
     constructor() {
@@ -613,8 +614,65 @@ export class VideoRendererService {
                 }
             }
             catch (err) {
-                console.warn(`[VideoRendererService] Manim rendering failed, falling back to SVG pipeline:`, err.message);
+                console.warn(`[VideoRendererService] Initial Manim rendering failed: ${err.message}. Regenerating scenes with procedural Manim engine...`);
                 sceneVideoPaths.length = 0;
+                try {
+                    const fallbackScript = new VisualPlanningAgent().generateProceduralManimScript(script);
+                    fs.writeFileSync(scenesPyPath, fallbackScript, "utf-8");
+                    const fallbackMatches = [...fallbackScript.matchAll(/class\s+(Scene\w+)\s*\(/g)];
+                    const fallbackClassNames = fallbackMatches.map((m) => m[1]);
+                    const mediaDir = path.join(jobDir, "manim_media_fallback");
+                    console.log(`[VideoRendererService] Rendering ${fallbackClassNames.length} procedural Manim scenes...`);
+                    await new Promise((resolve, reject) => {
+                        const proc = spawn(manimBin, [
+                            "-qh",
+                            "--format", "mp4",
+                            scenesPyPath,
+                            ...fallbackClassNames,
+                            "--media_dir", mediaDir,
+                        ]);
+                        proc.stdout.on("data", (d) => console.log(`[Manim-Fallback] ${d.toString().trim()}`));
+                        proc.stderr.on("data", (d) => console.warn(`[Manim-Fallback] ${d.toString().trim()}`));
+                        proc.on("close", (code) => {
+                            if (code === 0)
+                                resolve();
+                            else
+                                reject(new Error(`Fallback Manim render failed with code ${code}`));
+                        });
+                    });
+                    const fallbackClips = [];
+                    for (const scName of fallbackClassNames) {
+                        const searchFile = (dir) => {
+                            if (!fs.existsSync(dir))
+                                return null;
+                            const files = fs.readdirSync(dir);
+                            for (const f of files) {
+                                const full = path.join(dir, f);
+                                if (fs.statSync(full).isDirectory()) {
+                                    const res = searchFile(full);
+                                    if (res)
+                                        return res;
+                                }
+                                else if (f === `${scName}.mp4`) {
+                                    return full;
+                                }
+                            }
+                            return null;
+                        };
+                        const foundClip = searchFile(mediaDir);
+                        if (foundClip)
+                            fallbackClips.push(foundClip);
+                    }
+                    if (fallbackClips.length === fallbackClassNames.length) {
+                        sceneVideoPaths.push(...fallbackClips);
+                        renderedViaManim = true;
+                        console.log(`[VideoRendererService] Successfully rendered all ${fallbackClips.length} scenes with procedural Manim engine!`);
+                    }
+                }
+                catch (fallbackErr) {
+                    console.error(`[VideoRendererService] Procedural Manim also failed:`, fallbackErr.message);
+                    sceneVideoPaths.length = 0;
+                }
             }
         }
         // Fallback: Render timed scenes with progressive motion subframes if Manim wasn't used

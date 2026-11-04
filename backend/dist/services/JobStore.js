@@ -1,6 +1,8 @@
 import fs from "fs";
 import path from "path";
-const STORAGE_DIR = path.resolve(process.cwd(), "storage/jobs");
+const rootStorage = path.resolve(process.cwd(), "backend/storage/jobs");
+const localStorage = path.resolve(process.cwd(), "storage/jobs");
+const STORAGE_DIR = fs.existsSync(rootStorage) ? rootStorage : localStorage;
 if (!fs.existsSync(STORAGE_DIR)) {
     fs.mkdirSync(STORAGE_DIR, { recursive: true });
 }
