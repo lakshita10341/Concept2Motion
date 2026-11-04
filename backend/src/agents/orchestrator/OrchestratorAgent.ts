@@ -82,7 +82,12 @@ export class OrchestratorAgent {
       
       const [simulation, voicedScript] = await Promise.all([
         this.simulationAgent.runSimulation(job.request.topic),
-        this.narrationAgent.generateAllNarrationAudio(script, jobDir, job.request.voice),
+        this.narrationAgent.generateAllNarrationAudio(
+          script,
+          jobDir,
+          job.request.voice,
+          job.request.referenceAudioPath
+        ),
       ]);
 
       job.simulation = simulation;

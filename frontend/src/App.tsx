@@ -15,7 +15,9 @@ import {
   Cpu, 
   Clock, 
   ShieldCheck, 
-  Layers
+  Layers,
+  Volume2,
+  Upload
 } from 'lucide-react';
 
 interface Job {
@@ -97,6 +99,8 @@ export default function App() {
   const [targetDuration, setTargetDuration] = useState(45);
   const [visualStyle, setVisualStyle] = useState('minimalist_dark');
   const [voice, setVoice] = useState('en-US-GuyNeural');
+  const [referenceAudioFile, setReferenceAudioFile] = useState<File | null>(null);
+  const [referenceAudioBase64, setReferenceAudioBase64] = useState<string | null>(null);
 
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [activeJob, setActiveJob] = useState<Job | null>(null);
@@ -173,16 +177,23 @@ export default function App() {
     setSelectedTab('timeline');
 
     try {
+      const payload: any = {
+        topic,
+        audienceLevel,
+        targetDurationSeconds: Number(targetDuration),
+        visualStyle,
+        voice: referenceAudioBase64 ? "meta-seamless-m4t" : voice,
+      };
+
+      if (referenceAudioBase64) {
+        payload.referenceAudioBase64 = referenceAudioBase64;
+        payload.referenceAudioName = referenceAudioFile?.name || "ref_voice.wav";
+      }
+
       const res = await fetch('/api/jobs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          topic,
-          audienceLevel,
-          targetDurationSeconds: Number(targetDuration),
-          visualStyle,
-          voice,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -334,6 +345,65 @@ export default function App() {
                     <option value="blueprint">Technical Blueprint</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Reference Audio Upload for Meta SeamlessM4T-v2 Voice Cloning */}
+              <div className="mt-3 p-3 rounded-lg bg-zinc-950/70 border border-zinc-800">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-mono text-zinc-400">
+                    Voice Cloning (Meta SeamlessM4T-v2)
+                  </label>
+                  {referenceAudioFile && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReferenceAudioFile(null);
+                        setReferenceAudioBase64(null);
+                      }}
+                      className="text-[10px] text-zinc-400 hover:text-rose-400 font-mono transition"
+                    >
+                      Clear Audio
+                    </button>
+                  )}
+                </div>
+
+                <input
+                  type="file"
+                  accept="audio/*"
+                  id="voice-file-input"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setReferenceAudioFile(file);
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      setReferenceAudioBase64(reader.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  className="hidden"
+                />
+
+                <label
+                  htmlFor="voice-file-input"
+                  className={`w-full py-2 px-3 rounded border border-dashed flex items-center justify-center gap-2 cursor-pointer transition text-xs font-mono ${
+                    referenceAudioFile
+                      ? "border-emerald-500/50 bg-emerald-950/20 text-emerald-400"
+                      : "border-zinc-700 hover:border-zinc-500 text-zinc-400 hover:text-zinc-300"
+                  }`}
+                >
+                  <Volume2 className="w-3.5 h-3.5" />
+                  {referenceAudioFile ? (
+                    <span className="truncate max-w-[220px]">Cloning Voice: {referenceAudioFile.name}</span>
+                  ) : (
+                    <span>Upload 5-10s Voice Clip (.wav, .mp3)</span>
+                  )}
+                </label>
+                <p className="text-[10px] text-zinc-500 font-mono mt-1">
+                  {referenceAudioFile
+                    ? "Meta SeamlessM4T-v2 active: Narration will speak in your cloned voice."
+                    : "Optional: Upload any voice clip to clone with Meta SeamlessM4T-v2."}
+                </p>
               </div>
 
               <button

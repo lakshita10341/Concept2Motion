@@ -12,14 +12,15 @@ export class NarrationAgent {
   async generateAllNarrationAudio(
     script: TeachingScript,
     jobDir: string,
-    voice = "en-US-GuyNeural"
+    voice = "en-US-GuyNeural",
+    referenceAudioPath?: string
   ): Promise<TeachingScript> {
     const updatedSegments = await Promise.all(
       script.segments.map(async (segment) => {
         const audioFileName = `${segment.segmentId}.mp3`;
         const audioPath = path.join(jobDir, audioFileName);
 
-        const res = await this.tts.synthesizeSpeech(segment.narrationText, audioPath, voice);
+        const res = await this.tts.synthesizeSpeech(segment.narrationText, audioPath, voice, referenceAudioPath);
 
         return {
           ...segment,

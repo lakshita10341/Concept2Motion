@@ -53,7 +53,7 @@ export class OrchestratorAgent {
             this.addTrace(job, "Orchestrator Agent", "Parallel Stage", `Executing Python simulation runner and neural TTS voice synthesis concurrently for '${job.request.topic}'`, "info");
             const [simulation, voicedScript] = await Promise.all([
                 this.simulationAgent.runSimulation(job.request.topic),
-                this.narrationAgent.generateAllNarrationAudio(script, jobDir, job.request.voice),
+                this.narrationAgent.generateAllNarrationAudio(script, jobDir, job.request.voice, job.request.referenceAudioPath),
             ]);
             job.simulation = simulation;
             job.script = voicedScript;

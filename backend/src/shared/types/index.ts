@@ -14,6 +14,9 @@ export const VideoRequestSchema = z.preprocess((val: any) => {
   visualStyle: z.enum(["blueprint", "cyberpunk", "minimalist_dark", "academic"]).default("minimalist_dark"),
   voice: z.string().default("en-US-GuyNeural"),
   modelProvider: z.enum(["fireworks", "meta_direct", "mock"]).default("fireworks"),
+  referenceAudioBase64: z.string().optional(),
+  referenceAudioName: z.string().optional(),
+  referenceAudioPath: z.string().optional(),
 }));
 
 export type VideoRequest = z.infer<typeof VideoRequestSchema>;

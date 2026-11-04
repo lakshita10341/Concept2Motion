@@ -8,7 +8,8 @@ export interface TTSProvider {
   synthesizeSpeech(
     text: string,
     outputPath: string,
-    voice?: string
+    voice?: string,
+    referenceAudioPath?: string
   ): Promise<{ audioDurationSeconds: number; wordTimings?: WordTiming[] }>;
 }
 
@@ -18,7 +19,8 @@ export class EdgeTTSProvider implements TTSProvider {
   async synthesizeSpeech(
     text: string,
     outputPath: string,
-    voice = "en-US-GuyNeural"
+    voice = "en-US-GuyNeural",
+    referenceAudioPath?: string
   ): Promise<{ audioDurationSeconds: number; wordTimings?: WordTiming[] }> {
     const parentDir = path.dirname(outputPath);
     if (!fs.existsSync(parentDir)) {

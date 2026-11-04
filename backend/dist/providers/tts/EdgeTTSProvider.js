@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 export class EdgeTTSProvider {
     name = "edge-tts";
-    async synthesizeSpeech(text, outputPath, voice = "en-US-GuyNeural") {
+    async synthesizeSpeech(text, outputPath, voice = "en-US-GuyNeural", referenceAudioPath) {
         const parentDir = path.dirname(outputPath);
         if (!fs.existsSync(parentDir)) {
             fs.mkdirSync(parentDir, { recursive: true });

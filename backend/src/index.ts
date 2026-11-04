@@ -1,10 +1,12 @@
 import express from "express";
 import cors from "cors";
 import path from "path";
+import fs from "fs";
 import dotenv from "dotenv";
 import { UnifiedLLMProvider } from "./providers/UnifiedLLMProvider.js";
 import { MetaModelAPIProvider } from "./providers/meta/MetaModelAPIProvider.js";
 import { EdgeTTSProvider } from "./providers/tts/EdgeTTSProvider.js";
+import { SeamlessM4TProvider } from "./providers/tts/SeamlessM4TProvider.js";
 import { ResearchAgent } from "./agents/research/ResearchAgent.js";
 import { TeachingAgent } from "./agents/teaching/TeachingAgent.js";
 import { SimulationAgent } from "./agents/simulation/SimulationAgent.js";
@@ -30,7 +32,7 @@ app.use("/api/jobs/media", express.static(storageDir));
 // Initialize provider hierarchy (Meta Model API -> Fireworks -> Baseten -> Local Emulator)
 const llmProvider = new UnifiedLLMProvider();
 const metaProvider = new MetaModelAPIProvider();
-const tts = new EdgeTTSProvider();
+const tts = new SeamlessM4TProvider();
 
 const researchAgent = new ResearchAgent(llmProvider);
 const teachingAgent = new TeachingAgent(llmProvider);
@@ -109,6 +111,19 @@ app.post("/api/jobs", async (req, res) => {
   try {
     const parsedRequest = VideoRequestSchema.parse(req.body);
     const jobId = `c2m_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const jobDir = JobStore.getJobDir(jobId);
+    if (!fs.existsSync(jobDir)) {
+      fs.mkdirSync(jobDir, { recursive: true });
+    }
+
+    if (parsedRequest.referenceAudioBase64) {
+      const base64Data = parsedRequest.referenceAudioBase64.replace(/^data:audio\/\w+;base64,/, "");
+      const audioBuffer = Buffer.from(base64Data, "base64");
+      const refPath = path.join(jobDir, "reference_voice.wav");
+      fs.writeFileSync(refPath, audioBuffer);
+      parsedRequest.referenceAudioPath = refPath;
+      console.log(`[Job ${jobId}] Saved user uploaded reference voice (${audioBuffer.length} bytes) for SeamlessM4T-v2 synthesis`);
+    }
 
     const initialJob: PipelineJob = {
       id: jobId,
