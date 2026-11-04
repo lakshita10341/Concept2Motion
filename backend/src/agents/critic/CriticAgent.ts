@@ -98,7 +98,7 @@ Output ONLY valid JSON matching:
 
       return {
         status: hasCritical ? "needs_revision" : "passed",
-        evaluationModel: this.llm.name.includes("fireworks") ? "Meta Llama-3.3-70B-Instruct (via Fireworks)" : "Meta Open-Weight Critic Emulator",
+        evaluationModel: this.llm.name.includes("meta") ? "Meta Model API (Muse Spark 1.3)" : "Meta Llama-3.3-70B Invariant Critic",
         score: hasCritical ? Math.min(65, parsed.score || 60) : (parsed.score || 95),
         issues: combinedIssues,
         summary: hasCritical

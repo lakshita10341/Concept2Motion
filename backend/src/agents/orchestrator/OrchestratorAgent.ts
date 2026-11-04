@@ -1,3 +1,4 @@
+import { SafetyGuardrailAgent } from "../guardrails/SafetyGuardrailAgent.js";
 import { ResearchAgent } from "../research/ResearchAgent.js";
 import { TeachingAgent } from "../teaching/TeachingAgent.js";
 import { SimulationAgent } from "../simulation/SimulationAgent.js";
@@ -9,6 +10,7 @@ import { JobStore } from "../../services/JobStore.js";
 import { PipelineJob, AgentTraceItem } from "../../shared/types/index.js";
 
 export class OrchestratorAgent {
+  private safetyGuardrailAgent: SafetyGuardrailAgent;
   private researchAgent: ResearchAgent;
   private teachingAgent: TeachingAgent;
   private simulationAgent: SimulationAgent;
@@ -18,6 +20,7 @@ export class OrchestratorAgent {
   private renderer: VideoRendererService;
 
   constructor(
+    safetyGuardrailAgent: SafetyGuardrailAgent,
     researchAgent: ResearchAgent,
     teachingAgent: TeachingAgent,
     simulationAgent: SimulationAgent,
@@ -25,6 +28,7 @@ export class OrchestratorAgent {
     narrationAgent: NarrationAgent,
     criticAgent: CriticAgent
   ) {
+    this.safetyGuardrailAgent = safetyGuardrailAgent;
     this.researchAgent = researchAgent;
     this.teachingAgent = teachingAgent;
     this.simulationAgent = simulationAgent;
@@ -62,6 +66,19 @@ export class OrchestratorAgent {
     const jobDir = JobStore.getJobDir(jobId);
 
     try {
+      // 0. Safety Guardrail Stage (Meta Llama Guard)
+      this.addTrace(job, "Llama Guard Agent", "Auditing Input Safety", `Evaluating prompt topic against Meta Llama Guard safety taxonomy`, "info", "meta_llama_guard");
+      const safety = await this.safetyGuardrailAgent.evaluateSafety(job.request.topic);
+      if (!safety.safe) {
+        const errorMsg = `Safety policy violation${safety.violatedCategory ? ` [${safety.violatedCategory}]` : ""}: ${safety.reason}`;
+        this.addTrace(job, "Llama Guard Agent", "Safety Violation Detected", errorMsg, "error", "meta_llama_guard");
+        job.status = "failed";
+        job.error = errorMsg;
+        JobStore.saveJob(job);
+        return job;
+      }
+      this.addTrace(job, "Llama Guard Agent", "Content Approved", `Topic approved under Meta safety guidelines: ${safety.reason}`, "success", "meta_llama_guard");
+
       // 1. Research Stage
       job.status = "researching";
       this.addTrace(job, "Research Agent", "Investigating Topic", `Retrieving authoritative definitions for '${job.request.topic}'`, "info", "search_web & fetch_docs");
@@ -107,7 +124,7 @@ export class OrchestratorAgent {
 
       // 6. Critic & Verification Loop (Meta Open-Weight Model + Deterministic Rules)
       job.status = "critiquing";
-      this.addTrace(job, "Critic Agent", "Auditing Artifacts", "Reviewing algorithmic invariants, audio-visual sync, and visual props with Meta Llama 3.3 70B", "info", "meta_llama_3_critic");
+      this.addTrace(job, "Critic Agent", "Auditing Artifacts", "Reviewing algorithmic invariants, audio-visual sync, and visual props with Meta AI", "info", "meta_critic_audit");
       const criticReport = await this.criticAgent.verifyArtifacts(voicedScript, simulation, storyboard);
       job.criticReports.push(criticReport);
 

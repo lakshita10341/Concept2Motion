@@ -7,6 +7,7 @@ import { UnifiedLLMProvider } from "./providers/UnifiedLLMProvider.js";
 import { MetaModelAPIProvider } from "./providers/meta/MetaModelAPIProvider.js";
 import { EdgeTTSProvider } from "./providers/tts/EdgeTTSProvider.js";
 import { SeamlessM4TProvider } from "./providers/tts/SeamlessM4TProvider.js";
+import { SafetyGuardrailAgent } from "./agents/guardrails/SafetyGuardrailAgent.js";
 import { ResearchAgent } from "./agents/research/ResearchAgent.js";
 import { TeachingAgent } from "./agents/teaching/TeachingAgent.js";
 import { SimulationAgent } from "./agents/simulation/SimulationAgent.js";
@@ -35,6 +36,7 @@ const llmProvider = new UnifiedLLMProvider();
 const metaProvider = new MetaModelAPIProvider();
 const tts = new SeamlessM4TProvider();
 
+const safetyGuardrailAgent = new SafetyGuardrailAgent(llmProvider);
 const researchAgent = new ResearchAgent(llmProvider);
 const teachingAgent = new TeachingAgent(llmProvider);
 const simulationAgent = new SimulationAgent();
@@ -43,6 +45,7 @@ const narrationAgent = new NarrationAgent(tts);
 const criticAgent = new CriticAgent(llmProvider);
 
 const orchestrator = new OrchestratorAgent(
+  safetyGuardrailAgent,
   researchAgent,
   teachingAgent,
   simulationAgent,
