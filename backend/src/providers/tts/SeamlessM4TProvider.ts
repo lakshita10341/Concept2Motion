@@ -54,13 +54,13 @@ export class SeamlessM4TProvider implements TTSProvider {
       proc.stderr.on("data", (d) => {
         stderr += d.toString();
         const line = d.toString().trim();
-        if (line.startsWith("[SeamlessM4T]")) {
+        if (line.startsWith("[SeamlessM4T]") || line.startsWith("[MetaSpeech]")) {
           console.log(line);
         }
       });
 
       proc.on("close", (code) => {
-        if (code === 0 && stdout.includes("---OUTPUT_START---")) {
+        if (code === 0  && stdout.includes("---OUTPUT_START---")) {
           try {
             const raw = stdout.split("---OUTPUT_START---")[1].split("---OUTPUT_END---")[0].trim();
             const parsed = JSON.parse(raw);
@@ -73,13 +73,15 @@ export class SeamlessM4TProvider implements TTSProvider {
           }
         }
 
-        console.warn(`[SeamlessM4T] Process exited with code ${code}. Falling back to neural TTS.`);
-        this.fallbackTTS.synthesizeSpeech(text, outputPath, voice).then(resolve);
+        const safeFallbackVoice = (voice && voice.includes("Neural")) ? voice : "en-US-GuyNeural";
+        console.warn(`[SeamlessM4T] Process exited with code ${code}. Falling back to neural voice (${safeFallbackVoice}).`);
+        this.fallbackTTS.synthesizeSpeech(text, outputPath, safeFallbackVoice).then(resolve);
       });
 
       proc.on("error", (err) => {
-        console.warn(`[SeamlessM4T] Failed to spawn process: ${err.message}. Falling back to neural TTS.`);
-        this.fallbackTTS.synthesizeSpeech(text, outputPath, voice).then(resolve);
+        const safeFallbackVoice = (voice && voice.includes("Neural")) ? voice : "en-US-GuyNeural";
+        console.warn(`[SeamlessM4T] Failed to spawn process: ${err.message}. Falling back to neural voice (${safeFallbackVoice}).`);
+        this.fallbackTTS.synthesizeSpeech(text, outputPath, safeFallbackVoice).then(resolve);
       });
     });
   }

@@ -1,14 +1,27 @@
 #!/usr/bin/env python3
 """
-synthesize_seamless_m4t.py — Synthesizes speech using Meta SeamlessM4T-v2.
-Supports zero-shot voice cloning with reference audio (ref.wav).
+synthesize_seamless_m4t.py — Synthesizes speech using Meta MMS / Seamless models.
+Saves audio cleanly to MP3 using bundled FFmpeg and generates word timings for karaoke captions.
 """
 
 import sys
 import os
 import json
+import subprocess
 import torch
-import torchaudio
+import soundfile as sf
+
+def find_ffmpeg():
+    candidates = [
+        os.path.abspath("backend/node_modules/@ffmpeg-installer/linux-x64/ffmpeg"),
+        os.path.abspath("node_modules/@ffmpeg-installer/linux-x64/ffmpeg"),
+        os.path.abspath("../backend/node_modules/@ffmpeg-installer/linux-x64/ffmpeg"),
+        "ffmpeg"
+    ]
+    for c in candidates:
+        if os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    return "ffmpeg"
 
 def main():
     if len(sys.argv) < 3:
@@ -23,47 +36,31 @@ def main():
     clean_text = text.replace("*", "").replace("#", "").replace("`", "").replace("_", "").strip()
 
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    print(f"[SeamlessM4T] Using device: {device}", file=sys.stderr)
+    print(f"[MetaSpeech] Using device: {device}", file=sys.stderr)
 
-    from transformers import AutoProcessor, SeamlessM4Tv2Model
+    from transformers import VitsModel, AutoTokenizer
 
-    model_id = "facebook/seamless-m4t-v2-large"
-    print(f"[SeamlessM4T] Loading model {model_id}...", file=sys.stderr)
-    processor = AutoProcessor.from_pretrained(model_id)
+    model_id = "facebook/mms-tts-eng"
+    print(f"[MetaSpeech] Loading Meta model {model_id}...", file=sys.stderr)
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    model = VitsModel.from_pretrained(model_id).to(device)
 
-    # Load with float16 if cuda available to fit within 4GB VRAM
-    if device.startswith("cuda"):
-        model = SeamlessM4Tv2Model.from_pretrained(model_id, torch_dtype=torch.float16).to(device)
-    else:
-        model = SeamlessM4Tv2Model.from_pretrained(model_id).to(device)
+    inputs = tokenizer(clean_text, return_tensors="pt").to(device)
+    with torch.no_grad():
+        waveform = model(**inputs).waveform
 
-    # Process text input (tgt_lang="eng")
-    text_inputs = processor(text=clean_text, src_lang="eng", return_tensors="pt").to(device)
-
-    # If reference audio is provided, extract speaker embedding
-    spkr_id = 0
-    if ref_audio_path and os.path.exists(ref_audio_path):
-        print(f"[SeamlessM4T] Conditioned on reference audio: {ref_audio_path}", file=sys.stderr)
-        try:
-            ref_waveform, ref_sr = torchaudio.load(ref_audio_path)
-            if ref_sr != 16000:
-                resampler = torchaudio.transforms.Resample(ref_sr, 16000)
-                ref_waveform = resampler(ref_waveform)
-            # Use average channel if stereo
-            if ref_waveform.shape[0] > 1:
-                ref_waveform = torch.mean(ref_waveform, dim=0, keepdim=True)
-            
-            audio_inputs = processor(audios=ref_waveform.numpy()[0], sampling_rate=16000, return_tensors="pt").to(device)
-            audio_array = model.generate(**text_inputs, tgt_lang="eng", spkr_id=spkr_id)[0].cpu().numpy().squeeze()
-        except Exception as ref_err:
-            print(f"[SeamlessM4T] Warning: reference conditioning error ({ref_err}), using default speaker.", file=sys.stderr)
-            audio_array = model.generate(**text_inputs, tgt_lang="eng", spkr_id=spkr_id)[0].cpu().numpy().squeeze()
-    else:
-        audio_array = model.generate(**text_inputs, tgt_lang="eng", spkr_id=spkr_id)[0].cpu().numpy().squeeze()
-
-    # Save output audio (SeamlessM4T outputs at 16kHz)
+    audio_array = waveform.cpu().numpy().squeeze()
     sample_rate = model.config.sampling_rate
-    torchaudio.save(out_path, torch.from_numpy(audio_array).unsqueeze(0).to(torch.float32), sample_rate)
+
+    # Save to temporary WAV, then convert to output path (MP3/WAV)
+    tmp_wav = out_path + ".tmp.wav"
+    sf.write(tmp_wav, audio_array, sample_rate)
+
+    ffmpeg_bin = find_ffmpeg()
+    cmd = [ffmpeg_bin, "-y", "-i", tmp_wav, "-b:a", "192k", out_path]
+    subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if os.path.exists(tmp_wav):
+        os.remove(tmp_wav)
 
     duration_sec = round(len(audio_array) / float(sample_rate), 2)
 
