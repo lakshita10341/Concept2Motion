@@ -118,12 +118,38 @@ app.post("/api/jobs", async (req, res) => {
     }
 
     if (parsedRequest.referenceAudioBase64) {
-      const base64Data = parsedRequest.referenceAudioBase64.replace(/^data:audio\/\w+;base64,/, "");
+      const base64Data = parsedRequest.referenceAudioBase64.replace(/^data:.*?;base64,/, "");
       const audioBuffer = Buffer.from(base64Data, "base64");
+      const rawUploadPath = path.join(jobDir, "reference_raw_upload");
+      fs.writeFileSync(rawUploadPath, audioBuffer);
+
       const refPath = path.join(jobDir, "reference_voice.wav");
-      fs.writeFileSync(refPath, audioBuffer);
-      parsedRequest.referenceAudioPath = refPath;
-      console.log(`[Job ${jobId}] Saved user uploaded reference voice (${audioBuffer.length} bytes) for SeamlessM4T-v2 synthesis`);
+      const ffmpegBin = path.resolve(process.cwd(), "node_modules/@ffmpeg-installer/linux-x64/ffmpeg");
+      const altFfmpeg = path.resolve(process.cwd(), "backend/node_modules/@ffmpeg-installer/linux-x64/ffmpeg");
+      const activeFfmpeg = fs.existsSync(ffmpegBin) ? ffmpegBin : fs.existsSync(altFfmpeg) ? altFfmpeg : "ffmpeg";
+
+      try {
+        const { execSync } = await import("child_process");
+        execSync(`"${activeFfmpeg}" -y -i "${rawUploadPath}" -ac 1 -ar 24000 "${refPath}"`, { stdio: "ignore" });
+        parsedRequest.referenceAudioPath = refPath;
+        console.log(`[Job ${jobId}] Converted user uploaded voice (${audioBuffer.length} bytes) to 24kHz reference WAV for cloning`);
+      } catch (convErr: any) {
+        parsedRequest.referenceAudioPath = rawUploadPath;
+        console.warn(`[Job ${jobId}] Warning: FFmpeg audio conversion failed (${convErr.message}), using raw upload.`);
+      }
+    } else if (parsedRequest.referenceAudioPath && fs.existsSync(parsedRequest.referenceAudioPath)) {
+      const refPath = path.join(jobDir, "reference_voice.wav");
+      const ffmpegBin = path.resolve(process.cwd(), "node_modules/@ffmpeg-installer/linux-x64/ffmpeg");
+      const altFfmpeg = path.resolve(process.cwd(), "backend/node_modules/@ffmpeg-installer/linux-x64/ffmpeg");
+      const activeFfmpeg = fs.existsSync(ffmpegBin) ? ffmpegBin : fs.existsSync(altFfmpeg) ? altFfmpeg : "ffmpeg";
+      try {
+        const { execSync } = await import("child_process");
+        execSync(`"${activeFfmpeg}" -y -i "${parsedRequest.referenceAudioPath}" -ac 1 -ar 24000 "${refPath}"`, { stdio: "ignore" });
+        parsedRequest.referenceAudioPath = refPath;
+        console.log(`[Job ${jobId}] Converted local audio path to 24kHz reference WAV for cloning`);
+      } catch (convErr: any) {
+        console.warn(`[Job ${jobId}] Warning: FFmpeg audio conversion failed, using original path.`);
+      }
     }
 
     const initialJob: PipelineJob = {

@@ -54,7 +54,7 @@ export class SeamlessM4TProvider implements TTSProvider {
       proc.stderr.on("data", (d) => {
         stderr += d.toString();
         const line = d.toString().trim();
-        if (line.startsWith("[SeamlessM4T]") || line.startsWith("[MetaSpeech]")) {
+        if (line.startsWith("[SeamlessM4T]") || line.startsWith("[MetaSpeech]") || line.startsWith("[VoiceClone]")) {
           console.log(line);
         }
       });
