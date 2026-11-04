@@ -1,170 +1,249 @@
 import fs from "fs";
 import path from "path";
-import { spawnSync } from "child_process";
-import { MetaModelAPIProvider } from "../providers/meta/MetaModelAPIProvider.js";
+import { Resvg } from "@resvg/resvg-js";
 export class AvatarService {
-    static AVATARS = [
-        {
-            id: "cyberpunk_hacker",
-            name: "Security Hacker",
-            filename: "cyberpunk_hacker.png",
-            description: "Cyberpunk security specialist with glowing cyan visor and dark hoodie.",
-            keywords: ["ssl", "tls", "security", "crypto", "cryptography", "hacker", "exploit", "firewall", "mitm", "auth", "certificate", "cipher", "injection", "attack", "wifi"],
-        },
-        {
+    // Map of common technology keywords to Devicon CDN icon slugs
+    static TECH_ALIASES = {
+        postgresql: "postgresql",
+        postgres: "postgresql",
+        pg: "postgresql",
+        kubernetes: "kubernetes",
+        k8s: "kubernetes",
+        redis: "redis",
+        docker: "docker",
+        container: "docker",
+        containers: "docker",
+        kafka: "apachekafka",
+        apachekafka: "apachekafka",
+        nginx: "nginx",
+        mongodb: "mongodb",
+        mongo: "mongodb",
+        sqlite: "sqlite",
+        sqlite3: "sqlite",
+        react: "react",
+        vue: "vuejs",
+        vuejs: "vuejs",
+        angular: "angularjs",
+        nodejs: "nodejs",
+        node: "nodejs",
+        typescript: "typescript",
+        ts: "typescript",
+        javascript: "javascript",
+        js: "javascript",
+        python: "python",
+        rust: "rust",
+        golang: "go",
+        go: "go",
+        linux: "linux",
+        kernel: "linux",
+        ubuntu: "ubuntu",
+        debian: "debian",
+        arch: "archlinux",
+        archlinux: "archlinux",
+        git: "git",
+        github: "github",
+        gitlab: "gitlab",
+        cplusplus: "cplusplus",
+        cpp: "cplusplus",
+        c: "c",
+        java: "java",
+        spring: "spring",
+        aws: "amazonwebservices",
+        gcp: "googlecloud",
+        azure: "azure",
+        terraform: "terraform",
+        ansible: "ansible",
+        bash: "bash",
+        shell: "bash",
+        vim: "vim",
+        neovim: "neovim",
+        mysql: "mysql",
+        mariadb: "mariadb",
+        rabbitmq: "rabbitmq",
+        elasticsearch: "elasticsearch",
+        grafana: "grafana",
+        prometheus: "prometheus",
+        electron: "electron",
+        flutter: "flutter",
+        swift: "swift",
+        kotlin: "kotlin",
+        ruby: "ruby",
+        rails: "rails",
+        php: "php",
+        laravel: "laravel",
+        tailwindcss: "tailwindcss",
+        tailwind: "tailwindcss",
+        css: "css3",
+        css3: "css3",
+        html: "html5",
+        html5: "html5",
+        sass: "sass",
+        webpack: "webpack",
+        vite: "vitejs",
+        nextjs: "nextjs",
+        next: "nextjs",
+        graphql: "graphql",
+    };
+    // Pre-cached famous cartoon stickers (real, non-AI)
+    static CARTOON_AVATARS = {
+        tux_linux: {
             id: "tux_linux",
-            name: "Tux (Linux)",
+            name: "Tux (Linux Penguin)",
             filename: "tux_linux.png",
-            description: "Iconic Linux mascot for OS, systems, CLI, and kernel architecture.",
-            keywords: ["linux", "kernel", "syscall", "unix", "posix", "bash", "cli", "shell", "process", "thread", "ubuntu", "debian", "filesystem"],
+            description: "Iconic open-source mascot for OS, systems, networking, and engineering.",
         },
-        {
+        rick_sanchez: {
+            id: "rick_sanchez",
+            name: "Rick Sanchez",
+            filename: "rick_sanchez.png",
+            description: "Famous cynical scientist sticker for chaos, bugs, exploits, and deep edge-cases.",
+        },
+        homer_simpson: {
+            id: "homer_simpson",
+            name: "Homer Simpson",
+            filename: "homer_simpson.png",
+            description: "Classic cartoon sticker for everyday developer humor and simple explainers.",
+        },
+        ferris_rust: {
             id: "ferris_rust",
-            name: "Ferris the Crab (Rust)",
+            name: "Ferris (Rust)",
             filename: "ferris_rust.png",
-            description: "Official Rust mascot for memory safety, concurrency, and low-level code.",
-            keywords: ["rust", "rustacean", "borrow", "ownership", "memory", "concurrency", "unsafe", "lifetimes", "cargo"],
+            description: "Official Rust community mascot for memory safety and concurrency.",
         },
-        {
+        gopher_go: {
             id: "gopher_go",
             name: "Go Gopher",
             filename: "gopher_go.png",
-            description: "Official Go mascot for microservices, goroutines, and cloud backends.",
-            keywords: ["go", "golang", "goroutine", "channel", "kubernetes", "k8s", "docker", "container", "microservice", "backend"],
+            description: "Official Go mascot by Renee French for backend microservices.",
         },
-        {
+        octocat_git: {
             id: "octocat_git",
             name: "GitHub Octocat",
             filename: "octocat_git.png",
-            description: "GitHub Octocat for version control, CI/CD, and developer workflows.",
-            keywords: ["git", "github", "commit", "branch", "pull request", "merge", "rebase", "repo", "repository", "ci/cd", "devops"],
+            description: "GitHub Octocat mascot for version control and open source.",
         },
-        {
-            id: "staff_architect",
-            name: "Staff Architect (Default)",
-            filename: "staff_architect.png",
-            description: "Modern senior systems architect with glasses, badge, and terminal coffee mug.",
-            keywords: ["system design", "architecture", "database", "acid", "transaction", "sql", "nosql", "distributed", "cache", "redis", "scale", "performance", "atomic", "consistency"],
+        docker_whale: {
+            id: "docker_whale",
+            name: "Docker Whale (Moby Dock)",
+            filename: "docker_whale.png",
+            description: "Official Docker mascot for containerization.",
         },
-        {
+        python_mascot: {
+            id: "python_mascot",
+            name: "Python Mascot",
+            filename: "python_mascot.png",
+            description: "Official Python language mascot.",
+        },
+        peter_meme: {
             id: "peter_meme",
-            name: "Peter (Meme / Comedy)",
+            name: "Peter Griffin",
             filename: "peter_meme.png",
-            description: "Humorous pop-culture persona reserved only for memes, comedy, or satire.",
-            keywords: ["meme", "comedy", "joke", "satire", "funny", "parody", "peter"],
+            description: "Pop-culture cartoon sticker for satire and parodies.",
         },
-    ];
-    static DEFAULT_AVATAR_ID = "staff_architect";
-    static listAvatars() {
-        return this.AVATARS;
-    }
-    static getAvatarById(id) {
-        const found = this.AVATARS.find((a) => a.id === id);
-        return found || this.AVATARS.find((a) => a.id === this.DEFAULT_AVATAR_ID);
+    };
+    static DEFAULT_CARTOON_ID = "tux_linux";
+    static getAvatarsDir() {
+        const rootAssets = path.resolve(process.cwd(), "backend/assets/avatars");
+        const localAssets = path.resolve(process.cwd(), "assets/avatars");
+        return fs.existsSync(rootAssets) ? rootAssets : localAssets;
     }
     /**
-     * Intelligently selects the best-fitting avatar based on topic keywords and context.
-     * Never selects Peter Griffin unless explicitly tagged with meme/comedy keywords.
+     * Dynamically fetches a real official technology sticker at runtime,
+     * or falls back to a famous cartoon character if no tech sticker exists.
      */
-    static selectAvatarForTopic(title, domain, tags) {
-        const textCorpus = [
-            title || "",
-            domain || "",
-            ...(tags || []),
-        ].join(" ").toLowerCase();
-        // Check specific avatars (excluding the meme avatar initially)
-        for (const avatar of this.AVATARS) {
-            if (avatar.id === "peter_meme" || avatar.id === this.DEFAULT_AVATAR_ID)
-                continue;
-            for (const kw of avatar.keywords) {
-                // Match word boundaries with optional plural/verb endings (e.g. goroutine -> goroutines)
-                const regex = new RegExp(`\\b${kw}(?:s|es|ing|ed)?\\b`, "i");
-                if (regex.test(textCorpus)) {
-                    return avatar;
+    static async fetchRuntimeSticker(title, targetAudience) {
+        const corpus = `${title || ""} ${targetAudience || ""}`.toLowerCase();
+        const avatarsDir = this.getAvatarsDir();
+        if (!fs.existsSync(avatarsDir)) {
+            fs.mkdirSync(avatarsDir, { recursive: true });
+        }
+        // 1. Detect if any known technology entity is mentioned in the topic
+        let detectedSlug = null;
+        for (const [kw, slug] of Object.entries(this.TECH_ALIASES)) {
+            const regex = new RegExp(`\\b${kw}(?:s|es|ing|ed)?\\b`, "i");
+            if (regex.test(corpus)) {
+                detectedSlug = slug;
+                break;
+            }
+        }
+        // 2. If a technology entity was detected, try to retrieve or fetch its official sticker
+        if (detectedSlug) {
+            // Check if already in curated cartoon catalog
+            if (detectedSlug === "rust" && fs.existsSync(path.join(avatarsDir, "ferris_rust.png"))) {
+                return this.CARTOON_AVATARS.ferris_rust;
+            }
+            if (detectedSlug === "go" && fs.existsSync(path.join(avatarsDir, "gopher_go.png"))) {
+                return this.CARTOON_AVATARS.gopher_go;
+            }
+            if (detectedSlug === "git" && fs.existsSync(path.join(avatarsDir, "octocat_git.png"))) {
+                return this.CARTOON_AVATARS.octocat_git;
+            }
+            if (detectedSlug === "docker" && fs.existsSync(path.join(avatarsDir, "docker_whale.png"))) {
+                return this.CARTOON_AVATARS.docker_whale;
+            }
+            if (detectedSlug === "python" && fs.existsSync(path.join(avatarsDir, "python_mascot.png"))) {
+                return this.CARTOON_AVATARS.python_mascot;
+            }
+            if (detectedSlug === "linux" && fs.existsSync(path.join(avatarsDir, "tux_linux.png"))) {
+                return this.CARTOON_AVATARS.tux_linux;
+            }
+            // Check if already cached in assets/avatars
+            const cachedFile = path.join(avatarsDir, `${detectedSlug}.png`);
+            if (fs.existsSync(cachedFile)) {
+                console.log(`[AvatarService] Using cached sticker for "${detectedSlug}"`);
+                return {
+                    id: `tech_${detectedSlug}`,
+                    name: detectedSlug.toUpperCase(),
+                    filename: `${detectedSlug}.png`,
+                    description: `Official ${detectedSlug} sticker`,
+                    customPath: cachedFile,
+                };
+            }
+            // Dynamically fetch official vector from Devicon CDN at runtime
+            const cdnUrls = [
+                `https://raw.githubusercontent.com/devicons/devicon/master/icons/${detectedSlug}/${detectedSlug}-original.svg`,
+                `https://raw.githubusercontent.com/devicons/devicon/master/icons/${detectedSlug}/${detectedSlug}-plain.svg`,
+            ];
+            for (const url of cdnUrls) {
+                try {
+                    console.log(`[AvatarService] Fetching official sticker from: ${url}`);
+                    const res = await fetch(url);
+                    if (res.ok) {
+                        const svgContent = await res.text();
+                        if (svgContent && svgContent.includes("<svg")) {
+                            const resvg = new Resvg(svgContent, { fitTo: { mode: "width", value: 800 } });
+                            const pngData = resvg.render().asPng();
+                            fs.writeFileSync(cachedFile, pngData);
+                            console.log(`[AvatarService] Successfully cached official sticker "${detectedSlug}.png" (${pngData.length} bytes)`);
+                            return {
+                                id: `tech_${detectedSlug}`,
+                                name: detectedSlug.toUpperCase(),
+                                filename: `${detectedSlug}.png`,
+                                description: `Official ${detectedSlug} sticker`,
+                                customPath: cachedFile,
+                            };
+                        }
+                    }
+                }
+                catch (err) {
+                    console.warn(`[AvatarService] Could not fetch sticker from ${url}:`, err.message);
                 }
             }
         }
-        // Check meme avatar ONLY if explicit meme words appear
-        const memeAvatar = this.AVATARS.find((a) => a.id === "peter_meme");
-        if (memeAvatar) {
-            for (const kw of memeAvatar.keywords) {
-                const regex = new RegExp(`\\b${kw}\\b`, "i");
-                if (regex.test(textCorpus)) {
-                    return memeAvatar;
-                }
-            }
+        // 3. Fallback: Select a famous cartoon character based on context
+        const chaosKeywords = ["bug", "crash", "chaos", "hack", "exploit", "leak", "failure", "insane", "rant", "break", "heisenbug"];
+        const memeKeywords = ["meme", "funny", "joke", "comedy", "parody"];
+        if (chaosKeywords.some((k) => corpus.includes(k))) {
+            console.log(`[AvatarService] Using famous cartoon character: Rick Sanchez (chaos/debug context)`);
+            return this.CARTOON_AVATARS.rick_sanchez;
         }
-        // Default to modern Staff Architect
-        return this.getAvatarById(this.DEFAULT_AVATAR_ID);
-    }
-    /**
-     * Generates a topic-specific avatar on the fly using the Meta Muse Image API.
-     * Automatically isolates the character, creates transparency, and crops the bounding box.
-     */
-    static async generateDynamicAvatar(title, targetAudience, outputDirectory) {
-        try {
-            const provider = new MetaModelAPIProvider();
-            if (!provider.isConfigured()) {
-                console.log("[AvatarService] Meta Model API key not configured, skipping dynamic avatar generation.");
-                return null;
-            }
-            console.log(`[AvatarService] Calling Meta Muse Image API for custom avatar: "${title}"...`);
-            const personaPrompt = `Waist-up 2D vector technical cartoon illustration of a character specialist presenting "${title}". Flat vector art style, clean outlines, tech aesthetic, modern palette with slate #07090E, cyan #0EA5E9, and muted gray #94A3B8, isolated on solid pure black #000000 background, zero background clutter, facing right.`;
-            const res = await provider.generateImage(personaPrompt, { size: "1024x1024" });
-            if (!res.b64_json) {
-                console.warn("[AvatarService] No image data returned from Muse Image API.");
-                return null;
-            }
-            const rootAssets = path.resolve(process.cwd(), "backend/assets/avatars");
-            const localAssets = path.resolve(process.cwd(), "assets/avatars");
-            const defaultAvatarsDir = fs.existsSync(path.resolve(process.cwd(), "backend")) ? rootAssets : localAssets;
-            const outDir = outputDirectory || defaultAvatarsDir;
-            if (!fs.existsSync(outDir)) {
-                fs.mkdirSync(outDir, { recursive: true });
-            }
-            const rawTempPath = path.join(outDir, "dynamic_avatar_raw.webp");
-            const processedPath = path.join(outDir, "dynamic_avatar.png");
-            fs.writeFileSync(rawTempPath, Buffer.from(res.b64_json, "base64"));
-            // Process transparency & crop using process_avatar.py
-            let pythonBin = path.resolve(process.cwd(), "backend/.venv-manim/bin/python3");
-            if (!fs.existsSync(pythonBin)) {
-                pythonBin = path.resolve(process.cwd(), ".venv-manim/bin/python3");
-            }
-            if (!fs.existsSync(pythonBin)) {
-                pythonBin = "python3";
-            }
-            let scriptPath = path.resolve(process.cwd(), "backend/scripts/process_avatar.py");
-            if (!fs.existsSync(scriptPath)) {
-                scriptPath = path.resolve(process.cwd(), "scripts/process_avatar.py");
-            }
-            const proc = spawnSync(pythonBin, [scriptPath, rawTempPath, processedPath], {
-                encoding: "utf-8",
-                timeout: 15000,
-            });
-            if (proc.status !== 0 || !fs.existsSync(processedPath)) {
-                console.warn("[AvatarService] Avatar post-processing failed:", proc.stderr || "Unknown error");
-                return null;
-            }
-            // Clean up raw temp file
-            try {
-                if (fs.existsSync(rawTempPath))
-                    fs.unlinkSync(rawTempPath);
-            }
-            catch (_) { }
-            console.log(`[AvatarService] Successfully generated dynamic avatar at: ${processedPath}`);
-            return {
-                id: "dynamic_muse_avatar",
-                name: `Specialist: ${title.slice(0, 24)}`,
-                filename: path.basename(processedPath),
-                description: `Custom Muse-generated character for "${title}"`,
-                keywords: [],
-                customPath: processedPath,
-            };
+        if (memeKeywords.some((k) => corpus.includes(k))) {
+            console.log(`[AvatarService] Using famous cartoon character: Homer Simpson (meme context)`);
+            return this.CARTOON_AVATARS.homer_simpson;
         }
-        catch (err) {
-            console.warn("[AvatarService] Dynamic avatar generation failed, using curated avatar:", err.message);
-            return null;
-        }
+        // Default famous cartoon character: Tux the Linux penguin
+        console.log(`[AvatarService] Using default famous cartoon mascot: Tux the Linux Penguin`);
+        return this.CARTOON_AVATARS[this.DEFAULT_CARTOON_ID];
     }
     /**
      * Resolves the absolute disk path to the avatar image file.
@@ -173,27 +252,17 @@ export class AvatarService {
         if (customPath && fs.existsSync(customPath)) {
             return customPath;
         }
-        const avatar = avatarId ? this.getAvatarById(avatarId) : this.getAvatarById(this.DEFAULT_AVATAR_ID);
-        const possibleDirs = [
-            path.resolve(process.cwd(), "backend/assets/avatars"),
-            path.resolve(process.cwd(), "assets/avatars"),
-            path.resolve(process.cwd(), "backend/assets"),
-            path.resolve(process.cwd(), "assets"),
-        ];
-        for (const dir of possibleDirs) {
-            const fullPath = path.join(dir, avatar.filename);
-            if (fs.existsSync(fullPath)) {
-                return fullPath;
-            }
+        const avatarsDir = this.getAvatarsDir();
+        const avatar = (avatarId && this.CARTOON_AVATARS[avatarId]) || this.CARTOON_AVATARS[this.DEFAULT_CARTOON_ID];
+        const targetFile = path.join(avatarsDir, avatar.filename);
+        if (fs.existsSync(targetFile)) {
+            return targetFile;
         }
-        // Fallback to asset.png
-        for (const dir of possibleDirs) {
-            const fallback = path.join(dir, "asset.png");
-            if (fs.existsSync(fallback)) {
-                return fallback;
-            }
+        // Fallback to tux or any existing png
+        const defaultFile = path.join(avatarsDir, "tux_linux.png");
+        if (fs.existsSync(defaultFile)) {
+            return defaultFile;
         }
-        // Last resort
         return path.resolve(process.cwd(), "backend/assets/asset.png");
     }
 }

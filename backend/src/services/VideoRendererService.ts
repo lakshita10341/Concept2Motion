@@ -821,11 +821,9 @@ export class VideoRendererService {
 
     // 4. Generate high-retention karaoke caption timeline via caption_overlay
     const captionsDir = path.join(jobDir, "captions");
-    const selectedAvatar = storyboard?.avatar?.id 
-      ? AvatarService.getAvatarById(storyboard.avatar.id)
-      : AvatarService.selectAvatarForTopic(script.title, script.targetAudience);
-    const assetPath = AvatarService.getAvatarPath(selectedAvatar.id, storyboard?.avatar?.customPath);
-    console.log(`[VideoRenderer] Using topic avatar "${selectedAvatar.name}" (${selectedAvatar.id}) from ${assetPath}`);
+    const avatarInfo = storyboard?.avatar || (await AvatarService.fetchRuntimeSticker(script.title, script.targetAudience));
+    const assetPath = AvatarService.getAvatarPath(avatarInfo.id, avatarInfo.customPath);
+    console.log(`[VideoRenderer] Using topic sticker "${avatarInfo.name}" (${avatarInfo.id}) from ${assetPath}`);
 
     let captionConcatFile: string | null = null;
     let captionY = 1161;
