@@ -76,19 +76,19 @@ export class OrchestratorAgent {
       job.script = script;
       this.addTrace(job, "Teaching Agent", "Script Created", `Generated ${script.segments.length} narration segments with defined learning outcomes`, "success");
 
-      // 3. Executable Simulation
+      // 3 & 4. Concurrent Simulation & Narration Audio Generation (Parallel Execution)
       job.status = "simulating";
-      this.addTrace(job, "Simulation Agent", "Executing Code", `Executing sandboxed Python runner for '${job.request.topic}' to capture state snapshots`, "info", "execute_simulation");
-      const simulation = await this.simulationAgent.runSimulation(job.request.topic);
-      job.simulation = simulation;
-      this.addTrace(job, "Simulation Agent", "States Captured", `Extracted ${simulation.states.length} verified algorithmic execution states`, "success");
+      this.addTrace(job, "Orchestrator Agent", "Parallel Stage", `Executing Python simulation runner and neural TTS voice synthesis concurrently for '${job.request.topic}'`, "info");
+      
+      const [simulation, voicedScript] = await Promise.all([
+        this.simulationAgent.runSimulation(job.request.topic),
+        this.narrationAgent.generateAllNarrationAudio(script, jobDir, job.request.voice),
+      ]);
 
-      // 4. Narration Audio Generation
-      job.status = "narrating";
-      this.addTrace(job, "Narration Agent", "Synthesizing Audio", `Generating neural voice clips using ${job.request.voice}`, "info", "edge-tts");
-      const voicedScript = await this.narrationAgent.generateAllNarrationAudio(script, jobDir, job.request.voice);
+      job.simulation = simulation;
       job.script = voicedScript;
-      this.addTrace(job, "Narration Agent", "Audio Ready", `Generated ${voicedScript.segments.length} synchronized speech tracks with measured durations`, "success");
+      this.addTrace(job, "Simulation Agent", "States Captured", `Extracted ${simulation.states.length} verified algorithmic execution states`, "success");
+      this.addTrace(job, "Narration Agent", "Audio Ready", `Generated ${voicedScript.segments.length} synchronized speech tracks in parallel`, "success");
 
       // 5. Visual Planning (Storyboard)
       job.status = "planning";

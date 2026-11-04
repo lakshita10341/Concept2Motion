@@ -264,15 +264,15 @@ config.frame_height = 16.0
 config.background_color = "#07090E"
 `;
 
-    // 1. Fetch real technology sticker at runtime, or fallback to famous cartoon character (Tux / Rick)
-    const avatar = await AvatarService.fetchRuntimeSticker(script.title, script.targetAudience);
-    console.log(`[VisualPlanningAgent] Topic "${script.title}" -> Selected Sticker: ${avatar.name} (${avatar.id})`);
+    // 1. Fetch real technology sticker at runtime concurrently with visual scene planning
+    const avatarPromise = AvatarService.fetchRuntimeSticker(script.title, script.targetAudience);
 
     // 2. Generate Manim scene classes per segment for targeted narrative relevance
     const sceneClasses: string[] = [];
+    let avatar: import("../../services/AvatarService.js").AvatarProfile;
 
     if (this.llm) {
-      console.log(`[VisualPlanningAgent] Generating topic-specific Manim scenes per segment for "${script.title}"...`);
+      console.log(`[VisualPlanningAgent] Generating topic-specific Manim scenes per segment for "${script.title}" in parallel...`);
       const scenePromises = script.segments.map(async (seg, idx) => {
         const sceneNum = String(idx + 1).padStart(2, "0");
         const safeConcept = seg.concept.replace(/[^a-zA-Z0-9]/g, "") || `Beat${sceneNum}`;
@@ -339,14 +339,21 @@ STRICT RULES:
         }
       });
 
-      const generated = await Promise.all(scenePromises);
-      sceneClasses.push(...generated);
+      const [fetchedAvatar, generatedScenes] = await Promise.all([
+        avatarPromise,
+        Promise.all(scenePromises),
+      ]);
+      avatar = fetchedAvatar;
+      sceneClasses.push(...generatedScenes);
     } else {
+      avatar = await avatarPromise;
       script.segments.forEach((seg, idx) => {
         const sceneNum = String(idx + 1).padStart(2, "0");
         sceneClasses.push(this.generateSingleProceduralScene(seg, idx, sceneNum));
       });
     }
+
+    console.log(`[VisualPlanningAgent] Topic "${script.title}" -> Selected Sticker: ${avatar.name} (${avatar.id})`);
 
     let manimScript = `${header}\n${sceneClasses.join("\n\n")}\n`;
 

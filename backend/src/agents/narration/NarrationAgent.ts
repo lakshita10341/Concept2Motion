@@ -14,21 +14,21 @@ export class NarrationAgent {
     jobDir: string,
     voice = "en-US-GuyNeural"
   ): Promise<TeachingScript> {
-    const updatedSegments = [];
+    const updatedSegments = await Promise.all(
+      script.segments.map(async (segment) => {
+        const audioFileName = `${segment.segmentId}.mp3`;
+        const audioPath = path.join(jobDir, audioFileName);
 
-    for (const segment of script.segments) {
-      const audioFileName = `${segment.segmentId}.mp3`;
-      const audioPath = path.join(jobDir, audioFileName);
+        const res = await this.tts.synthesizeSpeech(segment.narrationText, audioPath, voice);
 
-      const res = await this.tts.synthesizeSpeech(segment.narrationText, audioPath, voice);
-
-      updatedSegments.push({
-        ...segment,
-        audioUrl: `/api/jobs/media/${path.basename(jobDir)}/${audioFileName}`,
-        audioDurationSeconds: res.audioDurationSeconds,
-        wordTimings: res.wordTimings || [],
-      });
-    }
+        return {
+          ...segment,
+          audioUrl: `/api/jobs/media/${path.basename(jobDir)}/${audioFileName}`,
+          audioDurationSeconds: res.audioDurationSeconds,
+          wordTimings: res.wordTimings || [],
+        };
+      })
+    );
 
     return {
       ...script,
