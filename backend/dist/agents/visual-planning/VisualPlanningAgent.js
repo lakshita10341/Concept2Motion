@@ -237,9 +237,12 @@ config.frame_width = 9.0
 config.frame_height = 16.0
 config.background_color = "#07090E"
 `;
-        // 1. Select best-fitting avatar for the topic (Staff Architect is the default, never Peter)
-        const avatar = AvatarService.selectAvatarForTopic(script.title, script.targetAudience);
-        console.log(`[VisualPlanningAgent] Topic "${script.title}" -> Selected Avatar: ${avatar.name} (${avatar.id})`);
+        // 1. Generate or select best-fitting avatar for the topic (Staff Architect is the default fallback, never Peter)
+        let avatar = await AvatarService.generateDynamicAvatar(script.title, script.targetAudience);
+        if (!avatar) {
+            avatar = AvatarService.selectAvatarForTopic(script.title, script.targetAudience);
+        }
+        console.log(`[VisualPlanningAgent] Topic "${script.title}" -> Avatar: ${avatar.name} (${avatar.id})`);
         // 2. Generate Manim scene classes per segment for targeted narrative relevance
         const sceneClasses = [];
         if (this.llm) {
@@ -350,6 +353,7 @@ STRICT RULES:
             avatar: {
                 id: avatar.id,
                 name: avatar.name,
+                customPath: avatar.customPath,
             },
         };
     }

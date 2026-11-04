@@ -79,6 +79,7 @@ export const StoryboardSchema = z.object({
     avatar: z.object({
         id: z.string(),
         name: z.string(),
+        customPath: z.string().optional(),
     }).optional(),
 });
 export const CriticIssueSchema = z.object({

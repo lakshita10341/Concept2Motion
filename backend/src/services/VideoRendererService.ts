@@ -824,7 +824,7 @@ export class VideoRendererService {
     const selectedAvatar = storyboard?.avatar?.id 
       ? AvatarService.getAvatarById(storyboard.avatar.id)
       : AvatarService.selectAvatarForTopic(script.title, script.targetAudience);
-    const assetPath = AvatarService.getAvatarPath(selectedAvatar.id);
+    const assetPath = AvatarService.getAvatarPath(selectedAvatar.id, storyboard?.avatar?.customPath);
     console.log(`[VideoRenderer] Using topic avatar "${selectedAvatar.name}" (${selectedAvatar.id}) from ${assetPath}`);
 
     let captionConcatFile: string | null = null;
